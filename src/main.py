@@ -46,4 +46,4 @@ if __name__ == '__main__':
 
     db = Database()._instance
     import uvicorn
-    uvicorn.run('main:app', host='0.0.0.0', port=12798, reload=True, reload_dirs=["src"])
+    uvicorn.run('main:app', host='0.0.0.0', port=12798, reload_dirs=["src"])
