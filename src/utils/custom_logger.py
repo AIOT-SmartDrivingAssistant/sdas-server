@@ -39,7 +39,7 @@ class CustomLogger:
                 def format(self, record):
                     record.timestamp = datetime.now().strftime(CustomLogger.DATE_FORMAT)
                     if record.pathname and record.lineno:
-                        path_name = '/'.join(record.pathname.split(os.sep)[record.pathname.split(os.sep).index("server") + 1:])
+                        path_name = '/'.join(record.pathname.split(os.sep)[record.pathname.split(os.sep).index("sdas-server") + 1:])
                         record.location = f"[{path_name}:{record.lineno}]"
                     else:
                         record.location = ""
