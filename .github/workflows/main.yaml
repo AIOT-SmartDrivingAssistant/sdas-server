@@ -15,8 +15,4 @@ jobs:
     if: github.actor != 'github-actions'
     steps:
       - name: Trigger Render Deploy
-        run: |
-          curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
-        with:
-          clear_cache: true
-          wait_deploy: true
+        run: curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
