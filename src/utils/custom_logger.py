@@ -9,7 +9,7 @@ class CustomLogger:
     _instance = None
     LOG_FORMAT = "%(message)s"
     DATE_FORMAT = "[%Y-%m-%d %H:%M:%S]"
-    LOG_DIR = "server/logs"
+    LOG_DIR = "logs"
     LOG_FILE = "backend"
     MAX_BYTES = 10 * 1024 * 1024  # 10MB
     BACKUP_COUNT = 5
@@ -39,7 +39,7 @@ class CustomLogger:
                 def format(self, record):
                     record.timestamp = datetime.now().strftime(CustomLogger.DATE_FORMAT)
                     if record.pathname and record.lineno:
-                        path_name = '/'.join(record.pathname.split(os.sep)[record.pathname.split(os.sep).index("server") + 1:])
+                        path_name = '/'.join(record.pathname.split(os.sep)[record.pathname.split(os.sep).index("src") + 1:])
                         record.location = f"[{path_name}:{record.lineno}]"
                     else:
                         record.location = ""
