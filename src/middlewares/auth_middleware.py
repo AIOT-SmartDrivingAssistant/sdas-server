@@ -18,6 +18,12 @@ class AuthMiddleware(BaseHTTPMiddleware):
             CustomLogger()._get_logger().info(f"Skip authentication for request [{request.url.path}]")
             return await call_next(request)
         
+        elif request.url.path == "/":
+            return JSONResponse(
+                content={"message": "Welcome to the SDAS API!"},
+                status_code=200
+            )
+        
         elif request.method == "OPTIONS":
             CustomLogger()._get_logger().info(f"Accept preflight for request [{request.url.path}]")
             return await call_next(request)
