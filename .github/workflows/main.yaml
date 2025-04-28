@@ -3,14 +3,14 @@ name: AIOT-SDAS-Server Pipeline
 on:
   push:
     branches:
-      - product
+      - main
     
 permissions:
   contents: write
 
 jobs:
   build:
-    name: Deploy lastest version of product branch to Render
+    name: Deploy lastest version of main branch to Render
     runs-on: ubuntu-latest
     if: github.actor != 'github-actions'
     steps:
