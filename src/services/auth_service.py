@@ -56,15 +56,15 @@ class AuthService:
         else:
             return AuthService.__pwd_context.verify(password, hashed_pw)
     
-    def _register(self, user_request: UserRequest) -> dict:
+    def _register(self, user_request: UserRequest) -> None:
         '''
         Register a new user in the database.
 
         Args:
-            user_request: An instance of UserRequest containing the username and password.
+            user_request (UserRequest): An instance of UserRequest containing the username and password.
 
         Returns:
-            A dictionary containing the document IDs of the newly created user and user configuration.
+            None
 
         Raises:
             Exception: If the username already exists.
@@ -88,42 +88,40 @@ class AuthService:
                 
                 init_services_status_data = AppService()._create_init_services_status_data(str(user_result.inserted_id))
 
-                services_status_result = Database()._instance.get_services_status_collection().insert_one(
+                Database()._instance.get_services_status_collection().insert_one(
                     init_services_status_data,
                     session=session
                 )
-            
-            return {
-                "user_doc_id": str(user_result.inserted_id),
-                "service_config_doc_id": str(services_status_result.inserted_id)
-            }
 
         except PyMongoError as e:
             session.abort_transaction()
             raise e
     
-    def _authenticate(self, user_request: UserRequest) -> Tuple[Optional[str], Optional[str]]:
+    def _authenticate(self, user_request: UserRequest) -> Tuple[Optional[str], Tuple[Optional[str], Optional[str]]]:
         '''
         Authenticate a user using the provided UserRequest object.
 
         Args:
-            user_request: An instance of UserRequest containing the username and password.
+            user_request (UserRequest): An instance of UserRequest containing the username and password.
 
         Returns:
-            A tuple containing the session id and user id as strings.
+            Tuple[Optional[str], Tuple[Optional[str], Optional[str]]]: A tuple containing the user ID, session token, and refresh token.
 
         Raises:
             Exception: If the credentials are invalid or if the user_request object is not provided.
         '''
 
-        user = Database()._instance.get_user_collection().find_one({UserDocument.FIELD_USERNAME: user_request.username})
+        user = Database()._instance.get_user_collection().find_one({
+            UserDocument.FIELD_USERNAME: user_request.username
+        })
         if not (user and self._verify_pw(user[UserDocument.FIELD_PASSWORD], user_request.password)):
             raise Exception("Invalid credentials")
         
-        session_token, refresh_token = self._create_session(str(user['_id']))
-        return (session_token, refresh_token)
+        userId = str(user['_id'])
+        session_token, refresh_token = self.__create_session(userId)
+        return userId, (session_token, refresh_token)
     
-    def _create_session(self, uid: str) -> Tuple[Optional[str], Optional[str]]:
+    def __create_session(self, uid: str) -> Tuple[Optional[str], Optional[str]]:
         session_token = secrets.token_hex(16)
         refresh_token = secrets.token_hex(32)
 
@@ -136,6 +134,14 @@ class AuthService:
             raise e
 
     def _validate_session(self, session_token: str) -> Optional[str]:
+        """Validate the session token and return the user ID if valid.
+
+        Args:
+            session_token (str): cookie session token
+
+        Returns:
+            Optional[str]: user ID if the session is valid, None otherwise.
+        """
         user_id = self.__redis.get(f"session:{session_token}")
         if user_id:
             self.__redis.expire(f"session:{session_token}", self.FIELD_SESSION_TTL)
@@ -144,6 +150,15 @@ class AuthService:
         return None
     
     def _refresh_session(self, response: Response, refresh_token: str) -> Optional[str]:
+        """Refresh the session token using the refresh token.
+
+        Args:
+            response (Response): _description_
+            refresh_token (str): _description_
+
+        Returns:
+            Optional[str]: _description_
+        """
         user_id = self.__redis.get(f"refresh:{refresh_token}")
         if user_id:
             new_session_token = secrets.token_hex(16)
@@ -161,6 +176,16 @@ class AuthService:
         return None
     
     def _delete_session(self, session_token: str, refresh_token: str) -> bool:
+        """
+        Delete the session and refresh tokens from Redis.
+
+        Args:
+            session_token (str): _description_
+            refresh_token (str): _description_
+
+        Returns:
+            bool: _description_
+        """
         deleted = False
         if session_token:
             if self.__redis.delete(f"session:{session_token}"):
@@ -171,9 +196,16 @@ class AuthService:
         return deleted
     
     def _add_session_to_cookie(self, response: Response, session_token: str, refresh_token: str) -> dict:
-        '''
-        Add cookies with session token to the given response.
-        '''
+        """Set the session and refresh tokens in cookies of client.
+
+        Args:
+            response (Response): _description_
+            session_token (str): _description_
+            refresh_token (str): _description_
+
+        Returns:
+            dict: _description_
+        """
         response.set_cookie(
             key="session_token",
             value=session_token,
@@ -192,9 +224,15 @@ class AuthService:
         return response
     
     def _del_session_in_cookie(self, response: Response) -> dict:
-        '''
-        Del the session token in cookies of client.
-        '''
+        """
+        Delete the session and refresh tokens in cookies of client.
+
+        Args:
+            response (Response): _description_
+
+        Returns:
+            dict: _description_
+        """
         response.delete_cookie(
             key="session_token",
             httponly=True,

@@ -41,15 +41,15 @@ class UserService:
             Get user info from the database by user id string.
 
             Args:
-                uid: The user id string.
+                uid (str): The user ID as string.
 
             Returns:
-                A dictionary containing the user's basic info.
+                dict: A dictionary containing the user's basic info.
         '''
         user = Database()._instance.get_user_collection().find_one({'_id': self._get_object_id(uid)})
 
         if not user:
-            raise Exception("User not find")
+            raise Exception("User not found")
 
         data = {}
         for key in UserDocument.ALL_BASIC_FIELDS:
@@ -66,8 +66,6 @@ class UserService:
         
         if update_data == {}:
             raise Exception("No data to update")
-        
-        print(f"update_data: {update_data}")
         
         result = Database()._instance.get_user_collection().update_one(
             {'_id': self._get_object_id(uid)},

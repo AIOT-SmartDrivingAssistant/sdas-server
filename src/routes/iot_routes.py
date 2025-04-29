@@ -15,29 +15,26 @@ def get_user_id(request: Request) -> str:
 @router.websocket("/ws/{device_id}")
 async def websocket_endpoint(websocket: WebSocket, device_id: str = None):
     if device_id is None:
-        CustomLogger()._get_logger().warning("Device ID is required")
+        CustomLogger()._get_logger().warning("Websocket connect FAIL: empty deviceId")
         await websocket.close(code=1008, reason="Device ID is required")
         return
     
     if websocket is None:
-        CustomLogger()._get_logger().warning("WebSocket is required")
+        CustomLogger()._get_logger().warning("Websocket connect FAIL: empty websocket")
         await websocket.close(code=1008, reason="WebSocket is required")
         return
     
-    CustomLogger()._get_logger().info(f"WebSocket connect request from device \"{device_id}\"")
-    
     check_user = UserService()._check_user_exist(device_id)
     if not check_user:
-        CustomLogger()._get_logger().warning(f"User not found for device ID \"{device_id}\"")
+        CustomLogger()._get_logger().warning(f"Websocket connect FAIL: {{ deviceId: \"{device_id}\" }} user not found")
         await websocket.close(code=1008, reason="User not found for device ID")
         return
     
     try:
         await IOTService()._establish_connection(device_id, websocket)
 
-    except Exception as e:
-        CustomLogger()._get_logger().error(f"Failed to establish connection: {e}")
-        CustomLogger()._get_logger().error(f"Websocket error: {e}")
+    except Exception:
+        CustomLogger()._get_logger().error(f"Websocket connect FAIL: {{ deviceId: \"{device_id}\" }} failed to establish connection")
         await websocket.close(code=1011, reason="Internal server error")
 
 @router.post('/on')

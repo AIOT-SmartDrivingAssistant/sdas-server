@@ -14,11 +14,11 @@ def get_user_id(request: Request) -> str:
 @router.get("/events")
 async def notification_stream(uid: str = Depends(get_user_id)):
     """Stream notifications to the client via SSE."""
-    CustomLogger()._get_logger().info(f"Client \"{uid}\" connected to SSE stream")
+    CustomLogger()._get_logger().info(f"SSE connect SUCCESS: {{ userId: \"{uid}\" }}")
     try:
         return await AppService()._get_notification_stream(uid)
     except Exception as e:
-        CustomLogger()._get_logger().error(f"Failed to get notification stream: {e.args[0]}")
+        CustomLogger()._get_logger().error(f"SSE connect FAIL: {{ userId: \"{uid}\" }} {e.args[0]}")
         return JSONResponse(
             content={"message": "Internal server error ", "detail": str(e.args[0])},
             status_code=500
@@ -30,8 +30,11 @@ async def get_sensor_data(
     uid: str = Depends(get_user_id)
 ):
     if not sensor_types:
-        CustomLogger()._get_logger().info("No sensor types provided")
-        return JSONResponse(content=[], status_code=200)
+        CustomLogger()._get_logger().error(f"Get sensor_data FAIL: {{ userId: \"{uid}\"}} sensor_types is empty")
+        return JSONResponse(
+            content={"message": "Bad request", "detail": "sensor_types is empty"},
+            status_code=422
+        )
     
     try:
         # Split the comma-separated string and create the request object
@@ -45,14 +48,14 @@ async def get_sensor_data(
                 sensor_data['timestamp'] = sensor_data['timestamp'].isoformat()
 
         sensor_types_str = ', '.join(request.sensor_types)
-        CustomLogger()._get_logger().info(f"Retrieved data for {sensor_types_str} types.")
+        CustomLogger()._get_logger().info(f"Get sensor_data SUCCESS: {{ userId: \"{uid}\", sensor_types: \"{sensor_types_str}\" }}")
 
         return JSONResponse(
             content=data,
             status_code=200
         )
     except Exception as e:
-        CustomLogger()._get_logger().error(f"Failed to get sensor data: {e.args[0]}")
+        CustomLogger()._get_logger().error(f"Get sensor_data FAIL: {{ userId: \"{uid}\"}} {e.args[0]}")
         return JSONResponse(
             content={"message": "Internal server error ", "detail": str(e.args[0])},
             status_code=500
@@ -61,11 +64,11 @@ async def get_sensor_data(
 @router.get("/services_status")
 async def get_services_status(uid = Depends(get_user_id)):
     """
-    Endpoint to get all services config information includes mode and value.
+    Endpoint to get all services config information includes status and value.
     """
     try:
         service_config_data = AppService()._get_services_status(uid)
-        CustomLogger()._get_logger().info(f"Retrieve successfully services status: {service_config_data}")
+        CustomLogger()._get_logger().info(f"Get services_status SUCCESS: {{ userId: \"{uid}\", result: {service_config_data} }}")
 
         return JSONResponse(
             content=service_config_data,
@@ -74,7 +77,7 @@ async def get_services_status(uid = Depends(get_user_id)):
         )
         
     except Exception as e:
-        CustomLogger()._get_logger().error(f"Failed to get services status: {e.args[0]}")
+        CustomLogger()._get_logger().error(f"Get services_status FAIL: {{ userId: \"{uid}\" }} {e.args[0]}")
         if e.args[0] == "Service config not find":
             return JSONResponse(
                 content={"message": e.args[0], "detail": "Can not find any document with the uid that extracted from cookie's session"},
@@ -90,7 +93,7 @@ async def get_services_status(uid = Depends(get_user_id)):
 async def get_action_history(request: ActionHistoryRequest, uid = Depends(get_user_id)):
     try:
         data = AppService()._get_action_history(uid, request)
-        CustomLogger()._get_logger().info(f"Retrieved successfully action history for \"{request.service_type}\" of user \"{uid}\"")
+        CustomLogger()._get_logger().info(f"Get action_history SUCCESS: {{ userId: \"{uid}\", result: {data} }}")
 
         return JSONResponse(
             content=data,
@@ -98,7 +101,7 @@ async def get_action_history(request: ActionHistoryRequest, uid = Depends(get_us
         )
     
     except Exception as e:
-        CustomLogger()._get_logger().error(f"Failed to get action history: {e.args[0]}")
+        CustomLogger()._get_logger().error(f"Get action_history FAIL: {{ userId: \"{uid}\" }} {e.args[0]}")
         return JSONResponse(
             content={"message": "Internal server error ", "detail": e.args[0]},
             status_code=500
