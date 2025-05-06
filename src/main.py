@@ -9,7 +9,12 @@ from utils.custom_logger import CustomLogger
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
+
 from middlewares.auth_middleware import AuthMiddleware
+from middlewares.header_middleware import SecurityHeadersMiddleware
 from services.database import Database
 
 from routes.auth_routes import router as auth_router
@@ -22,6 +27,10 @@ load_dotenv()
 
 app = FastAPI()
 
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=os.getenv("ALLOWED_ORIGINS").split(','),  # First one is app client, second one is iot-server
@@ -30,6 +39,7 @@ app.add_middleware(
     allow_headers=["*"]
 )
 app.add_middleware(AuthMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
 
 app.include_router(auth_router, prefix='/auth')
 app.include_router(user_router, prefix='/user')
@@ -42,7 +52,7 @@ app.include_router(app_router, prefix='/app')
 if __name__ == '__main__':
     CustomLogger()._get_logger().info("Starting backend server")
 
-    db = Database()._instance
+    _ = Database()._instance
     import uvicorn
     # uvicorn.run('main:app', host='0.0.0.0', port=12798, reload=True, reload_dirs=["src"])
-    uvicorn.run('main:app', host='0.0.0.0', port=12798, workers=4)
+    uvicorn.run('main:app', host='0.0.0.0', port=12798, workers=1)

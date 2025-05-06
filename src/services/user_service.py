@@ -94,7 +94,7 @@ class UserService:
                 Database()._instance.get_user_collection().delete_one({'_id': self._get_object_id(uid)}, session=session)
                 Database()._instance.get_user_config_collection().delete_one({'uid': uid}, session=session)
                 # Database()._instance.get_env_sensor_collection().delete_many({'uid': uid})
-        except Exception as e:
+        except Exception:
             session.abort_transaction()
             raise Exception("Delete user account failed")
         finally:

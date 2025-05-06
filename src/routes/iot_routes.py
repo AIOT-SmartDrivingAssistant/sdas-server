@@ -2,17 +2,21 @@ from utils.custom_logger import CustomLogger
 
 from fastapi import APIRouter, Request, Depends, WebSocket
 from fastapi.responses import JSONResponse
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from services.iot_service import IOTService
 from services.user_service import UserService
 from models.request import ControlServiceRequest
 
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
 
 def get_user_id(request: Request) -> str: 
     return request.state.user_id
 
 @router.websocket("/ws/{device_id}")
+@limiter.limit("5/minute")
 async def websocket_endpoint(websocket: WebSocket, device_id: str = None):
     if device_id is None:
         CustomLogger()._get_logger().warning("Websocket connect FAIL: empty deviceId")
@@ -38,6 +42,7 @@ async def websocket_endpoint(websocket: WebSocket, device_id: str = None):
         await websocket.close(code=1011, reason="Internal server error")
 
 @router.post('/on')
+@limiter.limit("5/minute")
 async def turn_on(request: Request, uid: str = Depends(get_user_id)):
     if request is None:
         CustomLogger()._get_logger().warning("Invalid request")
@@ -57,6 +62,7 @@ async def turn_on(request: Request, uid: str = Depends(get_user_id)):
         return JSONResponse(content={"message": "Failed to start system", "detail": str(e.args[0])}, status_code=500)
 
 @router.post('/off')
+@limiter.limit("5/minute")
 async def turn_off(request: Request, uid: str = Depends(get_user_id)):
     if request is None:
         CustomLogger()._get_logger().warning("Invalid request")
@@ -76,6 +82,7 @@ async def turn_off(request: Request, uid: str = Depends(get_user_id)):
         return JSONResponse(content={"message": "Failed to stop system", "detail": str(e.args[0])}, status_code=500)
 
 @router.patch("/service")
+@limiter.limit("5/minute")
 async def control_service(request: ControlServiceRequest, uid = Depends(get_user_id)):
     """
     Send control commands to IoT system websocket.

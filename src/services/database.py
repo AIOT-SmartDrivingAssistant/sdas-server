@@ -17,23 +17,28 @@ class Database:
     _instance = None
     _cache_data = {}
 
-    def __new__(cls, config: dict=None, test_mode: bool=False):
+    def __new__(cls):
         if cls._instance is None:
             cls._instance = super(Database, cls).__new__(cls)
-            cls._instance._init_database(config, test_mode)
+            cls._instance._init_database()
         return cls._instance
 
-    def _init_database(self, config: dict=None, test_mode: bool=False):
-        if config is None or not config.contains(self.FIELD_MONGO_URL) or not config.contains(self.FIELD_DB_NAME):
-            config = {
-                self.FIELD_MONGO_URL: os.getenv("MONGODB_URL"),
-                self.FIELD_DB_NAME: os.getenv("MONGODB_DB_NAME")
-            }
-            CustomLogger()._get_logger().info("Use env configuration to initialize database")
+    def __init__(self):
+        # Prevent __init__ from re-running on every instantiation
+        pass
+
+    def _init_database(self):
+        mongodb_url = os.getenv("MONGODB_URL")
+        db_name = os.getenv("MONGODB_DB_NAME")
+        if mongodb_url is None or db_name is None:
+            CustomLogger()._get_logger().error("MongoDB URL or DB name not set in environment variables.")
+            return
+
         try:
-            self.client = MongoClient(config[self.FIELD_MONGO_URL])
-            self.db = self.client[config[self.FIELD_DB_NAME]]
+            self.client = MongoClient(mongodb_url)
+            self.db = self.client[db_name]
             self.fs = gridfs.GridFS(self.db, os.getenv("MONGOBD_AVATAR_COL"))
+            self._instance = self
 
             CustomLogger()._get_logger().info(f"Connected with database {self.db}.")
         except Exception as e:

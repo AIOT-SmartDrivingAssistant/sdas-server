@@ -2,18 +2,22 @@ from utils.custom_logger import CustomLogger
 
 from fastapi import APIRouter, Request, Depends, File, UploadFile
 from fastapi.responses import JSONResponse, StreamingResponse
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from services.user_service import UserService
 
 from models.request import UserInfoRequest
 
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
 
 def get_user_id(request: Request) -> str: 
     return request.state.user_id
 
 @router.get("/")
-async def get_user_info(uid: str = Depends(get_user_id)):
+@limiter.limit("5/minute")
+async def get_user_info(request: Request, uid: str = Depends(get_user_id)):
     try:
         user_data = UserService()._get_user_info(uid)
 
@@ -45,7 +49,8 @@ async def get_user_info(uid: str = Depends(get_user_id)):
             )
     
 @router.patch("/")
-async def update_user_info(user_info_request: UserInfoRequest, uid: str = Depends(get_user_id)):
+@limiter.limit("5/minute")
+async def update_user_info(request: Request, user_info_request: UserInfoRequest, uid: str = Depends(get_user_id)):
     try:
         UserService()._update_user_info(uid, user_info_request)
         CustomLogger()._get_logger().info(f"Update user_data SUCCESS: {{ userId: \"{uid}\", data: {user_info_request} }}")
@@ -75,7 +80,8 @@ async def update_user_info(user_info_request: UserInfoRequest, uid: str = Depend
             )
     
 @router.delete("/")
-async def delete_user_info(uid: str = Depends(get_user_id)):
+@limiter.limit("5/minute")
+async def delete_user_info(request: Request, uid: str = Depends(get_user_id)):
     try:
         UserService()._delete_user_account(uid)
         CustomLogger()._get_logger().info(f"Delete user SUCCESS: {{ userId: \"{uid}\" }}")
@@ -95,7 +101,8 @@ async def delete_user_info(uid: str = Depends(get_user_id)):
         )
         
 @router.get("/avatar")
-async def get_user_avatar(uid: str = Depends(get_user_id)):
+@limiter.limit("5/minute")
+async def get_user_avatar(request: Request, uid: str = Depends(get_user_id)):
     try:
         file = UserService()._get_avatar(uid)
         CustomLogger()._get_logger().info(f"Get user_avatar SUCCESS: {{ userId: \"{uid}\", data: {file}}}")
@@ -119,7 +126,8 @@ async def get_user_avatar(uid: str = Depends(get_user_id)):
         )
 
 @router.put("/avatar")
-async def update_user_avatar(file: UploadFile = File(...), uid: str = Depends(get_user_id)):
+@limiter.limit("5/minute")
+async def update_user_avatar(request: Request, file: UploadFile = File(...), uid: str = Depends(get_user_id)):
     try:
         result = await UserService()._update_avatar(uid, file)
         CustomLogger()._get_logger().info(f"Update user_avatar SUCCESS: {{ userId: \"{uid}\", result: {result}}}")
@@ -143,7 +151,8 @@ async def update_user_avatar(file: UploadFile = File(...), uid: str = Depends(ge
         )
 
 @router.delete("/avatar")
-async def delete_user_avatar(uid: str = Depends(get_user_id)):
+@limiter.limit("5/minute")
+async def delete_user_avatar(request: Request, uid: str = Depends(get_user_id)):
     try:
         UserService()._delete_avatar(uid)
         CustomLogger()._get_logger().info(f"Delete user_avatar SUCCESS: {{ userId: \"{uid}\" }}")

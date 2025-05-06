@@ -2,17 +2,21 @@ from utils.custom_logger import CustomLogger
 
 from fastapi import APIRouter, Request, Depends
 from fastapi.responses import JSONResponse
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from services.app_service import AppService
 from models.request import ActionHistoryRequest, SensorDataRequest
 
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
 
 def get_user_id(request: Request) -> str: 
     return request.state.user_id
 
 @router.get("/events")
-async def notification_stream(uid: str = Depends(get_user_id)):
+@limiter.limit("5/minute")
+async def notification_stream(request: Request, uid: str = Depends(get_user_id)):
     """Stream notifications to the client via SSE."""
     CustomLogger()._get_logger().info(f"SSE connect SUCCESS: {{ userId: \"{uid}\" }}")
     try:
@@ -25,7 +29,9 @@ async def notification_stream(uid: str = Depends(get_user_id)):
         )
 
 @router.get('/sensor_data')
+@limiter.limit("5/minute")
 async def get_sensor_data(
+    request: Request,
     sensor_types: str,  # Receive as comma-separated string
     uid: str = Depends(get_user_id)
 ):
@@ -62,7 +68,8 @@ async def get_sensor_data(
         )
 
 @router.get("/services_status")
-async def get_services_status(uid = Depends(get_user_id)):
+@limiter.limit("5/minute")
+async def get_services_status(request: Request, uid = Depends(get_user_id)):
     """
     Endpoint to get all services config information includes status and value.
     """
@@ -90,9 +97,10 @@ async def get_services_status(uid = Depends(get_user_id)):
             )
 
 @router.get("/action_history")
-async def get_action_history(request: ActionHistoryRequest, uid = Depends(get_user_id)):
+@limiter.limit("5/minute")
+async def get_action_history(request: Request, action_history_request: ActionHistoryRequest, uid = Depends(get_user_id)):
     try:
-        data = AppService()._get_action_history(uid, request)
+        data = AppService()._get_action_history(uid, action_history_request)
         CustomLogger()._get_logger().info(f"Get action_history SUCCESS: {{ userId: \"{uid}\", result: {data} }}")
 
         return JSONResponse(

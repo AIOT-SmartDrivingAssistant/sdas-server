@@ -1,8 +1,9 @@
-import re
 from utils.custom_logger import CustomLogger
 
 from fastapi import APIRouter, Depends, Request, Response
 from starlette.responses import JSONResponse
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from pymongo.errors import PyMongoError
 
@@ -11,9 +12,11 @@ from services.auth_service import AuthService
 from models.request import UserRequest
 
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
 
 @router.post("/register")
-async def register(user: UserRequest):
+@limiter.limit("5/minute")
+async def register(request: Request, user: UserRequest):
     try:
         AuthService()._register(user)
         CustomLogger()._get_logger().info(f"Register SUCCESS: {{ username: \"{user.username}\"}}")
@@ -42,7 +45,8 @@ async def register(user: UserRequest):
             )
 
 @router.patch("/login")
-async def login(user: UserRequest, response: Response):
+@limiter.limit("5/minute")
+async def login(request: Request, response: Response, user: UserRequest):
     try:
         userId, (session_token, refresh_token) = AuthService()._authenticate(user)
         CustomLogger()._get_logger().info(f"Login SUCCESS: {{ userId: \"{userId}\", session_token: \"{session_token}\", refresh_token: \"{refresh_token}\" }}")
@@ -72,6 +76,7 @@ def get_user_id(request: Request) -> str:
     return request.state.user_id
 
 @router.patch("/refresh")
+@limiter.limit("5/minute")
 async def refresh(request: Request, response: Response, uid: str = Depends(get_user_id)):
     input_refresh_token = request.cookies.get("refresh_token")
     if not input_refresh_token:
@@ -107,6 +112,7 @@ async def refresh(request: Request, response: Response, uid: str = Depends(get_u
         )
 
 @router.patch("/logout")
+@limiter.limit("5/minute")
 async def logout(request: Request, response: Response, uid: str = Depends(get_user_id)):
     session_token = request.cookies.get("session_token")
     refresh_token = request.cookies.get("refresh_token")
