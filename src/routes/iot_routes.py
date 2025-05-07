@@ -16,7 +16,6 @@ def get_user_id(request: Request) -> str:
     return request.state.user_id
 
 @router.websocket("/ws/{device_id}")
-@limiter.limit("5/minute")
 async def websocket_endpoint(websocket: WebSocket, device_id: str = None):
     if device_id is None:
         CustomLogger()._get_logger().warning("Websocket connect FAIL: empty deviceId")
