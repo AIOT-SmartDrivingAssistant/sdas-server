@@ -1,3 +1,4 @@
+import os
 from starlette.middleware.base import BaseHTTPMiddleware
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -7,4 +8,6 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Content-Security-Policy"] = "default-src 'self'"
+        allowed_origins = os.getenv("ALLOWED_ORIGINS", "*")
+        response.headers["Access-Control-Allow-Origin"] = allowed_origins
         return response
