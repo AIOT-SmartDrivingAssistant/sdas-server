@@ -24,7 +24,6 @@ class Database:
         return cls._instance
 
     def __init__(self):
-        # Prevent __init__ from re-running on every instantiation
         pass
 
     def _init_database(self):
