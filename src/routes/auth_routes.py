@@ -44,7 +44,7 @@ async def register(request: Request, user: UserRequest):
                 status_code=500
             )
 
-@router.patch("/login")
+@router.post("/login")
 @limiter.limit("5/minute")
 async def login(request: Request, response: Response, user: UserRequest):
     try:
@@ -111,7 +111,7 @@ async def refresh(request: Request, response: Response, uid: str = Depends(get_u
             status_code=500
         )
 
-@router.patch("/logout")
+@router.post("/logout")
 @limiter.limit("5/minute")
 async def logout(request: Request, response: Response, uid: str = Depends(get_user_id)):
     session_token = request.cookies.get("session_token")

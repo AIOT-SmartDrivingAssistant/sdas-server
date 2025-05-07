@@ -23,10 +23,6 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 content={"message": "Welcome to the SDAS API!"},
                 status_code=200
             )
-        
-        elif request.method == "OPTIONS":
-            CustomLogger()._get_logger().info(f"Accept preflight: [{request.url.path}]")
-            return await call_next(request)
 
         # Check for session token in cookies
         session_token = request.cookies.get("session_token")

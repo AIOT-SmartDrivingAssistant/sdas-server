@@ -33,7 +33,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.getenv("ALLOWED_ORIGINS").split(','),  # First one is app client, second one is iot-server
+    allow_origins=[os.getenv("ALLOWED_ORIGINS", "*")],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"]
@@ -54,5 +54,5 @@ if __name__ == '__main__':
 
     _ = Database()._instance
     import uvicorn
-    # uvicorn.run('main:app', host='0.0.0.0', port=12798, reload=True, reload_dirs=["src"])
-    uvicorn.run('main:app', host='0.0.0.0', port=12798, workers=1)
+    uvicorn.run('main:app', host='0.0.0.0', port=12798, reload=True, reload_dirs=["src"])
+    # uvicorn.run('main:app', host='0.0.0.0', port=12798, workers=1)
