@@ -7,7 +7,7 @@ class UserRequest(BaseModel):
     password: str = Field(..., min_length=8, max_length=128)
 
 class UserInfoRequest(BaseModel):
-    name: Optional[str] = Field(None, min_length=3, max_length=50, pattern="^[a-zA-Z0-9_]*$")
+    name: Optional[str] = Field(None, min_length=3, max_length=50, pattern="^[a-zA-Z0-9_ ]*$")
     email: Optional[str] = Field(None, email=True)
     phone: Optional[str] = Field(None, min_length=10, max_length=10, pattern="^[0-9]*$")
     address: Optional[str] = Field(None, min_length=3, max_length=100)
