@@ -8,7 +8,7 @@ To run the Python server, follow these steps:
    pip install -r requirements.txt
    ```
 
-2. **Start the Server**: Navigate to the directory where your server's main script is located and run the following command:
+2. **Start the Server to test**: Navigate to the directory where your server's main script is located and run the following command:
 
    ```bash
    uvicorn src.main:app --host=127.0.0.1 --port=8000 --reload
