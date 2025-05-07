@@ -4,6 +4,7 @@ from datetime import datetime
 from rich.console import Console
 from rich.logging import RichHandler
 from logging.handlers import RotatingFileHandler
+from pytz import timezone
 
 class CustomLogger:
     _instance = None
@@ -37,7 +38,8 @@ class CustomLogger:
 
             class FileFormatter(logging.Formatter):
                 def format(self, record):
-                    record.timestamp = datetime.now().strftime(CustomLogger.DATE_FORMAT)
+                    vn_timezone = timezone("Asia/Ho_Chi_Minh")
+                    record.timestamp = datetime.now(vn_timezone).strftime(CustomLogger.DATE_FORMAT)
                     if record.pathname and record.lineno:
                         path_parts = record.pathname.split(os.sep)
                         if "src" in path_parts:
