@@ -82,13 +82,13 @@ async def turn_off(request: Request, uid: str = Depends(get_user_id)):
 
 @router.patch("/service")
 @limiter.limit("5/minute")
-async def control_service(request: ControlServiceRequest, uid = Depends(get_user_id)):
+async def control_service(request: Request, control_service_request: ControlServiceRequest, uid = Depends(get_user_id)):
     """
     Send control commands to IoT system websocket.
     """
     try:
-        service_type = request.service_type
-        value = request.value
+        service_type = control_service_request.service_type
+        value = control_service_request.value
 
         await IOTService()._control_iot_system(
             device_id=uid,
