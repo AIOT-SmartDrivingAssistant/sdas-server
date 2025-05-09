@@ -44,8 +44,6 @@ for router, prefix in [
     for route in router.routes:
         if hasattr(route, 'path'):
             route_paths.add(prefix + route.path if not route.path.startswith('/') else prefix + route.path)
-
-# Add root path if needed
 route_paths.add('/')
 
 app.add_middleware(
@@ -65,12 +63,8 @@ app.include_router(user_router, prefix='/user')
 app.include_router(iot_router, prefix='/iot')
 app.include_router(app_router, prefix='/app')
 
-# for route in app.routes:
-#     CustomLogger().get_logger().info(route)
-
 if __name__ == '__main__':
     CustomLogger()._get_logger().info("Starting backend server")
 
     import uvicorn
     uvicorn.run('main:app', host='0.0.0.0', port=12798, reload=True, reload_dirs=["sdas-server/src"])
-    # uvicorn.run('main:app', host='0.0.0.0', port=12798, workers=1)
