@@ -49,7 +49,7 @@ async def register(request: Request, user: UserRequest):
 async def login(request: Request, response: Response, user: UserRequest):
     try:
         userId, (session_token, refresh_token) = AuthService()._authenticate(user)
-        CustomLogger()._get_logger().info(f"Login SUCCESS: {{ userId: \"{userId}\", session_token: \"{session_token}\", refresh_token: \"{refresh_token}\" }}")
+        CustomLogger()._get_logger().info(f"Login SUCCESS: {{ userId: \"{userId}\" }}")
 
         response = JSONResponse(
             content={"message": "Login successful"},
@@ -90,7 +90,7 @@ async def refresh(request: Request, response: Response, uid: str = Depends(get_u
         new_session_token = AuthService()._refresh_session(response, input_refresh_token)
 
         if new_session_token:
-            CustomLogger()._get_logger().info(f"Refresh SUCCESS: {{ userId: \"{uid}\", new_session: \"{new_session_token}\" }}")
+            CustomLogger()._get_logger().info(f"Refresh SUCCESS: {{ userId: \"{uid}\" }}")
             response = JSONResponse(
                 content={"message": "Refresh success"},
                 status_code=200

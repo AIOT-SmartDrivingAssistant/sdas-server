@@ -15,7 +15,6 @@ class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         # Skip authentication for whitelisted paths
         if request.url.path in self.whitelist:
-            CustomLogger()._get_logger().info(f"Skip authentication: [{request.url.path}]")
             return await call_next(request)
         
         elif request.url.path == "/":
@@ -42,7 +41,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 status_code=401
             )
 
-        CustomLogger()._get_logger().info(f"Request: {{url: [{request.url.path}], session: \"{session_token}\", userId: \"{user_id}\"}}")
+        # CustomLogger()._get_logger().info(f"Request: {{url: [{request.url.path}], session: \"{session_token}\", userId: \"{user_id}\"}}")
 
         request.state.user_id = str(user_id)
 

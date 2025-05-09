@@ -20,7 +20,6 @@ def get_user_id(request: Request) -> str:
 async def get_user_info(request: Request, uid: str = Depends(get_user_id)):
     try:
         user_data = UserService()._get_user_info(uid)
-
         CustomLogger()._get_logger().info(f"Get user_data SUCCESS: {{ userId: \"{uid}\" }}")
 
         return JSONResponse(
@@ -106,6 +105,7 @@ async def get_user_avatar(request: Request, uid: str = Depends(get_user_id)):
     try:
         file = UserService()._get_avatar(uid)
         CustomLogger()._get_logger().info(f"Get user_avatar SUCCESS: {{ userId: \"{uid}\", data: {file}}}")
+
         return StreamingResponse(file, media_type=file.content_type)
 
     except Exception as e:

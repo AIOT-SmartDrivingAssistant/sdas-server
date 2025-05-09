@@ -66,7 +66,7 @@ class AppService:
 
         init_services_status_data[ServicesStatusDocument.FIELD_UID] = uid if uid else ""
 
-        for field in ServicesStatusDocument.ALL_SEVICE_FIELDS:
+        for field in ServicesStatusDocument.ALL_SERVICE_FIELDS:
             init_services_status_data[field] = "off"
 
         for field in ServicesStatusDocument.ALL_VALUE_FIELDS:
@@ -109,7 +109,7 @@ class AppService:
             raise Exception("Service config not find")
         
         data = {}
-        for key in ServicesStatusDocument.ALL_SEVICE_FIELDS:
+        for key in ServicesStatusDocument.ALL_SERVICE_FIELDS:
             data[key] = services_status[key]
 
         for key in ServicesStatusDocument.ALL_VALUE_FIELDS:
