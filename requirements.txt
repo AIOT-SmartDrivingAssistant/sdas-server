@@ -18,3 +18,4 @@ anyio==4.9.0
 idna==3.10
 starlette==0.46.1
 slowapi==0.1.9
+colorama==0.4.6
