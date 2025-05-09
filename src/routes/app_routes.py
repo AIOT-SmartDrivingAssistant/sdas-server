@@ -6,7 +6,7 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 
 from services.app_service import AppService
-from models.request import ActionHistoryRequest, SensorDataRequest
+from models.request import SensorDataRequest
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
@@ -95,13 +95,13 @@ async def get_services_status(request: Request, uid = Depends(get_user_id)):
                 content={"message": "Internal server error ", "detail": e.args[0]},
                 status_code=500
             )
-
+    
 @router.get("/action_history")
 @limiter.limit("5/minute")
-async def get_action_history(request: Request, action_history_request: ActionHistoryRequest, uid = Depends(get_user_id)):
+async def get_all_action_history(request: Request, uid = Depends(get_user_id)):
     try:
-        data = AppService()._get_action_history(uid, action_history_request)
-        CustomLogger()._get_logger().info(f"Get action_history SUCCESS: {{ userId: \"{uid}\", result: {data} }}")
+        data = AppService()._get_all_action_history(uid)
+        CustomLogger()._get_logger().info(f"Get all action_history SUCCESS: {{ userId: \"{uid}\" }}")
 
         return JSONResponse(
             content=data,
@@ -109,7 +109,7 @@ async def get_action_history(request: Request, action_history_request: ActionHis
         )
     
     except Exception as e:
-        CustomLogger()._get_logger().error(f"Get action_history FAIL: {{ userId: \"{uid}\" }} {e.args[0]}")
+        CustomLogger()._get_logger().error(f"Get all action_history FAIL: {{ userId: \"{uid}\" }} {e.args[0]}")
         return JSONResponse(
             content={"message": "Internal server error ", "detail": e.args[0]},
             status_code=500

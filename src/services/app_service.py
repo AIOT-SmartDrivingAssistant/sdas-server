@@ -5,7 +5,7 @@ from typing import Dict
 from fastapi.responses import StreamingResponse
 from utils.custom_logger import CustomLogger
 from services.database import Database
-from models.request import ActionHistoryRequest, SensorDataRequest
+from models.request import SensorDataRequest
 from models.mongo_doc import ServicesStatusDocument
 
 class AppService:
@@ -116,22 +116,22 @@ class AppService:
             data[key] = services_status[key]
 
         return data
-        
-    def _get_action_history(self, request: ActionHistoryRequest = None, uid: str = None):
-        service_type = request.service_type
-        amt = request.amt
-
+    
+    def _get_all_action_history(self, uid: str = None):
         action_history = Database()._instance.get_action_history_collection().find(
             {
-                "uid": uid,
-                "service_type": service_type
+                "uid": uid
             },
             sort=[(self.FIELD_TIMESTAMP, -1)],  # Sort by timestamp in descending order
-            limit=amt
+            limit=15
         )
 
         data = []
         for action in action_history:
+            action['_id'] = str(action['_id'])
+            action[self.FIELD_TIMESTAMP] = action[self.FIELD_TIMESTAMP].isoformat()
+            action.pop(self.FIELD_UID, None)
+            action.pop('_id', None)
             data.append(action)
 
         return data
