@@ -53,7 +53,7 @@ async def turn_on(request: Request, uid: str = Depends(get_user_id)):
             target="system",
             command="on"
         )
-        CustomLogger()._get_logger().info(f"Started system successfully for user \"{uid}\"")
+        CustomLogger()._get_logger().info(f"Started system SUCCESS: {{ userId: \"{uid}\" }}")
         return JSONResponse(content={"message": "System started successfully"}, status_code=200)
             
     except Exception as e:
@@ -73,7 +73,7 @@ async def turn_off(request: Request, uid: str = Depends(get_user_id)):
             target="system",
             command="off"
         )
-        CustomLogger()._get_logger().info(f"Stopped system successfully for user \"{uid}\"")
+        CustomLogger()._get_logger().info(f"Stopped system SUCCESS: {{ userId: \"{uid}\" }} ")
         return JSONResponse(content={"message": "System stopped successfully"}, status_code=200)
             
     except Exception as e:
@@ -95,8 +95,7 @@ async def control_service(request: Request, control_service_request: ControlServ
             target=service_type,
             command=value
         )
-
-        CustomLogger()._get_logger().info(f"Control successfully service \"{service_type}\" with value \"{value}\" for user \"{uid}\"")
+        CustomLogger()._get_logger().info(f"Control service SUCCESS: {{ type: \"{service_type}\", value: \"{value}\", userId: \"{uid}\" }}")
             
         return JSONResponse(
             content={"message": "Service control request processed successfully"},

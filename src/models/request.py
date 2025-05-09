@@ -33,10 +33,6 @@ class ControlServiceRequest(BaseModel):
     service_type: Literal["air_cond_service", "drowsiness_service", "headlight_service", "dist_service"]
     value: str = Field(..., pattern=r"^(on|off|[1-9][0-9]*\.?[0-9]*)$")
 
-class ActionHistoryRequest(BaseModel):
-    service_type: Literal["air_cond_service", "drowsiness_service", "headlight_service", "dist_service"]
-    amt: Optional[int] = 0
-
 class IOTDataResponse(BaseModel):
     device_id: str
     command_id: str

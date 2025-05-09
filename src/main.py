@@ -15,7 +15,8 @@ from slowapi.util import get_remote_address
 
 from middlewares.auth_middleware import AuthMiddleware
 from middlewares.header_middleware import SecurityHeadersMiddleware
-from services.database import Database
+from middlewares.notfound_middleware import NotFoundMiddleware
+from middlewares.logger_middleware import LoggerMiddleware
 
 from routes.auth_routes import router as auth_router
 from routes.user_routes import router as user_router
@@ -31,28 +32,39 @@ limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
+# Collect all route paths from routers
+route_prefixes = ['/auth', '/user', '/iot', '/app']
+route_paths = set()
+for router, prefix in [
+    (auth_router, '/auth'),
+    (user_router, '/user'),
+    (iot_router, '/iot'),
+    (app_router, '/app'),
+]:
+    for route in router.routes:
+        if hasattr(route, 'path'):
+            route_paths.add(prefix + route.path if not route.path.startswith('/') else prefix + route.path)
+route_paths.add('/')
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.getenv("ALLOWED_ORIGINS").split(','),  # First one is app client, second one is iot-server
+    allow_origins=[os.getenv("ALLOWED_ORIGINS", "*")],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"]
 )
 app.add_middleware(AuthMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(NotFoundMiddleware, routes=list(route_paths))
+app.add_middleware(LoggerMiddleware)
 
 app.include_router(auth_router, prefix='/auth')
 app.include_router(user_router, prefix='/user')
 app.include_router(iot_router, prefix='/iot')
 app.include_router(app_router, prefix='/app')
 
-# for route in app.routes:
-#     CustomLogger().get_logger().info(route)
-
 if __name__ == '__main__':
     CustomLogger()._get_logger().info("Starting backend server")
 
-    _ = Database()._instance
     import uvicorn
-    # uvicorn.run('main:app', host='0.0.0.0', port=12798, reload=True, reload_dirs=["src"])
-    uvicorn.run('main:app', host='0.0.0.0', port=12798, workers=1)
+    uvicorn.run('main:app', host='0.0.0.0', port=12798, reload=True, reload_dirs=["sdas-server/src"])
