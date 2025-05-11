@@ -37,11 +37,11 @@ async def websocket_endpoint(websocket: WebSocket, device_id: str = None):
         await IOTService()._establish_connection(device_id, websocket)
 
     except Exception:
-        CustomLogger()._get_logger().error(f"Websocket connect FAIL: {{ deviceId: \"{device_id}\" }} failed to establish connection")
+        CustomLogger()._get_logger().warning(f"Websocket connect FAIL: {{ deviceId: \"{device_id}\" }} failed to establish connection")
         await websocket.close(code=1011, reason="Internal server error")
 
 @router.post('/on')
-@limiter.limit("5/minute")
+@limiter.limit("20/minute")
 async def turn_on(request: Request, uid: str = Depends(get_user_id)):
     if request is None:
         CustomLogger()._get_logger().warning("Invalid request")
@@ -57,11 +57,11 @@ async def turn_on(request: Request, uid: str = Depends(get_user_id)):
         return JSONResponse(content={"message": "System started successfully"}, status_code=200)
             
     except Exception as e:
-        CustomLogger()._get_logger().error(f"Error starting system: {e.args[0]}")
+        CustomLogger()._get_logger().warning(f"Error starting system: {e.args[0]}")
         return JSONResponse(content={"message": "Failed to start system", "detail": str(e.args[0])}, status_code=500)
 
 @router.post('/off')
-@limiter.limit("5/minute")
+@limiter.limit("20/minute")
 async def turn_off(request: Request, uid: str = Depends(get_user_id)):
     if request is None:
         CustomLogger()._get_logger().warning("Invalid request")
@@ -77,11 +77,11 @@ async def turn_off(request: Request, uid: str = Depends(get_user_id)):
         return JSONResponse(content={"message": "System stopped successfully"}, status_code=200)
             
     except Exception as e:
-        CustomLogger()._get_logger().error(f"Error stopping system: {e.args[0]}")
+        CustomLogger()._get_logger().warning(f"Error stopping system: {e.args[0]}")
         return JSONResponse(content={"message": "Failed to stop system", "detail": str(e.args[0])}, status_code=500)
 
 @router.patch("/service")
-@limiter.limit("5/minute")
+@limiter.limit("20/minute")
 async def control_service(request: Request, control_service_request: ControlServiceRequest, uid = Depends(get_user_id)):
     """
     Send control commands to IoT system websocket.
@@ -103,7 +103,7 @@ async def control_service(request: Request, control_service_request: ControlServ
         )
             
     except Exception as e:
-        CustomLogger()._get_logger().error(f"Failed to control service: {e.args[0]}")
+        CustomLogger()._get_logger().warning(f"Failed to control service: {e.args[0]}")
         return JSONResponse(
             content={"message": "Failed to control service", "detail": str(e.args[0])},
             status_code=500

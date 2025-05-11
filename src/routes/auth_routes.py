@@ -15,7 +15,7 @@ router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
 
 @router.post("/register")
-@limiter.limit("5/minute")
+@limiter.limit("20/minute")
 async def register(request: Request, user: UserRequest):
     try:
         AuthService()._register(user)
@@ -27,7 +27,7 @@ async def register(request: Request, user: UserRequest):
         )
 
     except Exception as e:
-        CustomLogger()._get_logger().error(f"Register FAIL: {e.args[0]}")
+        CustomLogger()._get_logger().warning(f"Register FAIL: {e.args[0]}")
         if e.__class__ == PyMongoError:
             return JSONResponse(
                 content={"message": "Database error", "detail": e.args[0]},
@@ -45,7 +45,7 @@ async def register(request: Request, user: UserRequest):
             )
 
 @router.post("/login")
-@limiter.limit("5/minute")
+@limiter.limit("20/minute")
 async def login(request: Request, response: Response, user: UserRequest):
     try:
         userId, (session_token, refresh_token) = AuthService()._authenticate(user)
@@ -60,7 +60,7 @@ async def login(request: Request, response: Response, user: UserRequest):
         return response
 
     except Exception as e:
-        CustomLogger()._get_logger().error(f"Login FAIL: \"{user.username}\" {e.args[0]}")
+        CustomLogger()._get_logger().warning(f"Login FAIL: \"{user.username}\" {e.args[0]}")
         if e.args[0] == "Invalid credentials":
             return JSONResponse(
                 content={"message": e.args[0], "detail": "Invalid username or password"},
@@ -76,7 +76,7 @@ def get_user_id(request: Request) -> str:
     return request.state.user_id
 
 @router.patch("/refresh")
-@limiter.limit("5/minute")
+@limiter.limit("20/minute")
 async def refresh(request: Request, response: Response, uid: str = Depends(get_user_id)):
     input_refresh_token = request.cookies.get("refresh_token")
     if not input_refresh_token:
@@ -98,21 +98,21 @@ async def refresh(request: Request, response: Response, uid: str = Depends(get_u
             return response
         
         else:
-            CustomLogger()._get_logger().error(f"Refresh FAIL: {{ userId: \"{uid}\" }} refresh token not found")
+            CustomLogger()._get_logger().warning(f"Refresh FAIL: {{ userId: \"{uid}\" }} refresh token not found")
             return JSONResponse(
                 content={"message": "Refresh fail"},
                 status_code=500
             )
     
     except Exception as e:
-        CustomLogger()._get_logger().error(f"Refresh FAIL: {{ userId: \"{uid}\" }} {e.args[0]}")
+        CustomLogger()._get_logger().warning(f"Refresh FAIL: {{ userId: \"{uid}\" }} {e.args[0]}")
         return JSONResponse(
             content={"message": "Internal server error ", "detail": e.args[0]},
             status_code=500
         )
 
 @router.post("/logout")
-@limiter.limit("5/minute")
+@limiter.limit("20/minute")
 async def logout(request: Request, response: Response, uid: str = Depends(get_user_id)):
     session_token = request.cookies.get("session_token")
     refresh_token = request.cookies.get("refresh_token")
@@ -136,14 +136,14 @@ async def logout(request: Request, response: Response, uid: str = Depends(get_us
 
             return response
         else:
-            CustomLogger()._get_logger().error(f"Logout FAIL: {{ userId: \"{uid}\" }} fail to delete token")
+            CustomLogger()._get_logger().warning(f"Logout FAIL: {{ userId: \"{uid}\" }} fail to delete token")
             return JSONResponse(
                 content={"message": "Database error", "detail": "Fail to delete token"},
                 status_code=500
             )
     
     except Exception as e:
-        CustomLogger()._get_logger().error(f"Logout FAIL: {{ userId: \"{uid}\" }} {e.args[0]}")
+        CustomLogger()._get_logger().warning(f"Logout FAIL: {{ userId: \"{uid}\" }} {e.args[0]}")
         return JSONResponse(
             content={"message": "Internal server error ", "detail": e.args[0]},
             status_code=500

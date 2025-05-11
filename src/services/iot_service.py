@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime
 import uuid
 
 from models.request import IOTDataResponse, IOTNotification
@@ -109,7 +110,8 @@ class IOTService:
                             client_id=device_id,
                             notification={
                                 "service_type": iot_notification.service_type,
-                                "notification": iot_notification.notification
+                                "notification": iot_notification.notification,
+                                "timestamp": datetime.now()
                             }
                         )
 

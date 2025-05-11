@@ -45,14 +45,14 @@ class AppService:
                 while True:
                     notification = await self.client_queues[client_id].get()
                     yield f"data: {json.dumps(notification)}\n\n"
-                    CustomLogger()._get_logger().info(f"Sent notification to client \"{client_id}\": {notification}")
+                    CustomLogger()._get_logger().info(f"Sent notification: {{ userId: \"{client_id}\", notification: {notification} }} ")
                     self.client_queues[client_id].task_done()
 
             except asyncio.CancelledError:
                 async with self._lock:
                     if client_id in self.client_queues and self.client_queues[client_id].empty():
                         del self.client_queues[client_id]
-                CustomLogger()._get_logger().info(f"Closed notification stream for client \"{client_id}\"")
+                CustomLogger()._get_logger().info(f"Closed notification stream: {{ userId: \"{client_id}\" }}")
                 raise
 
         return StreamingResponse(
@@ -97,6 +97,7 @@ class AppService:
         for sensor_type in sensor_types:
             newest_data = self._get_newest_sensor_data(uid, sensor_type)
             if newest_data:
+                newest_data[self.FIELD_TIMESTAMP] = newest_data[self.FIELD_TIMESTAMP].isoformat()
                 data.append(newest_data)
 
         return data
