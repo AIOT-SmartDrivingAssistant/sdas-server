@@ -77,35 +77,37 @@ def get_user_id(request: Request) -> str:
 
 @router.patch("/refresh")
 @limiter.limit("20/minute")
-async def refresh(request: Request, response: Response, uid: str = Depends(get_user_id)):
+async def refresh(request: Request, response: Response):
     input_refresh_token = request.cookies.get("refresh_token")
     if not input_refresh_token:
-        CustomLogger()._get_logger().warning(f"Missing refresh token: {{ userId: \"{uid}\"}}")
+        CustomLogger()._get_logger().warning("Missing refresh token")
         return JSONResponse(
             content={"message": "Unauthorized", "detail": "Missing refresh token"},
             status_code=401
         )
 
     try:
-        new_session_token = AuthService()._refresh_session(response, input_refresh_token)
+        user_id, new_session_token = AuthService()._refresh_session(response, input_refresh_token)
 
         if new_session_token:
-            CustomLogger()._get_logger().info(f"Refresh SUCCESS: {{ userId: \"{uid}\" }}")
+            CustomLogger()._get_logger().info(f"Refresh SUCCESS: {{ userId: \"{user_id}\" }}")
+            
             response = JSONResponse(
                 content={"message": "Refresh success"},
                 status_code=200
             )
+            response = AuthService()._add_session_to_cookie(response, new_session_token, input_refresh_token)
             return response
         
         else:
-            CustomLogger()._get_logger().warning(f"Refresh FAIL: {{ userId: \"{uid}\" }} refresh token not found")
+            CustomLogger()._get_logger().warning("Refresh FAIL: refresh token not found")
             return JSONResponse(
                 content={"message": "Refresh fail"},
                 status_code=500
             )
     
     except Exception as e:
-        CustomLogger()._get_logger().warning(f"Refresh FAIL: {{ userId: \"{uid}\" }} {e.args[0]}")
+        CustomLogger()._get_logger().warning(f"Refresh FAIL: {e.args[0]}")
         return JSONResponse(
             content={"message": "Internal server error ", "detail": e.args[0]},
             status_code=500

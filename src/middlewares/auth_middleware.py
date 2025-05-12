@@ -9,7 +9,7 @@ from services.auth_service import AuthService
 class AuthMiddleware(BaseHTTPMiddleware):
     def __init__(self, app):
         super().__init__(app)
-        self.whitelist = ["/auth/register", "/auth/login"]
+        self.whitelist = ["/auth/register", "/auth/login", "/auth/refresh"]
         self.auth_service = AuthService()
 
     async def dispatch(self, request: Request, call_next):
