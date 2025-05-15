@@ -97,7 +97,7 @@ class AppService:
         for sensor_type in sensor_types:
             newest_data = self._get_newest_sensor_data(uid, sensor_type)
             if newest_data:
-                newest_data[self.FIELD_TIMESTAMP] = newest_data[self.FIELD_TIMESTAMP].isoformat()
+                newest_data[self.FIELD_TIMESTAMP] = newest_data[self.FIELD_TIMESTAMP]
                 data.append(newest_data)
 
         return data
@@ -145,7 +145,7 @@ class AppService:
         data = []
         for action in action_history:
             action['_id'] = str(action['_id'])
-            action[self.FIELD_TIMESTAMP] = action[self.FIELD_TIMESTAMP].isoformat()
+            action[self.FIELD_TIMESTAMP] = action[self.FIELD_TIMESTAMP]
             action.pop(self.FIELD_UID, None)
             action.pop('_id', None)
             data.append(action)
@@ -168,7 +168,7 @@ class AppService:
                 doc.pop('_id', None)
                 doc.pop('uid', None)
                 if self.FIELD_TIMESTAMP in doc:
-                    doc[self.FIELD_TIMESTAMP] = doc[self.FIELD_TIMESTAMP].isoformat()
+                    doc[self.FIELD_TIMESTAMP] = doc[self.FIELD_TIMESTAMP]
                 data.append(doc)
             result[sensor_type] = data
 
