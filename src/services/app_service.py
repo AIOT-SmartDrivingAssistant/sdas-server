@@ -118,7 +118,7 @@ class AppService:
 
         return data
     
-    def _toggle_all_service_status(self, uid: str = None, is_turning_on: bool = True):
+    def _toggle_all_service_status(self, uid: str, is_turning_on: bool, session):
         Database()._instance.get_services_status_collection().update_one(
             { 'uid': uid },
             {
@@ -129,7 +129,8 @@ class AppService:
                     ServicesStatusDocument.FIELD_DROWSINESS_SERVICE: "on" if is_turning_on else "off",
                     ServicesStatusDocument.FIELD_HEADLIGHT_SERVICE: "on" if is_turning_on else "off"
                 }
-            }
+            },
+            session=session
         )
     
     def _get_all_action_history(self, uid: str = None):
@@ -150,3 +151,25 @@ class AppService:
             data.append(action)
 
         return data
+    
+    def _get_all_sensor_data(self, uid: str = None) -> dict:
+        """Get 20 newest data for each sensor type: temp, humid, dis, lux."""
+        sensor_types = ["temp", "humid", "dis", "lux"]
+        result = {}
+
+        for sensor_type in sensor_types:
+            cursor = Database()._instance.get_env_sensor_collection().find(
+                {self.FIELD_UID: uid, self.FIELD_SENSOR_TYPE: sensor_type},
+                sort=[(self.FIELD_TIMESTAMP, -1)],
+                limit=20
+            )
+            data = []
+            for doc in cursor:
+                doc.pop('_id', None)
+                doc.pop('uid', None)
+                if self.FIELD_TIMESTAMP in doc:
+                    doc[self.FIELD_TIMESTAMP] = doc[self.FIELD_TIMESTAMP].isoformat()
+                data.append(doc)
+            result[sensor_type] = data
+
+        return result

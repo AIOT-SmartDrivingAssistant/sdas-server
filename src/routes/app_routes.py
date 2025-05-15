@@ -29,7 +29,6 @@ async def notification_stream(request: Request, uid: str = Depends(get_user_id))
         )
 
 @router.get('/sensor_data')
-@limiter.limit("20/minute")
 async def get_sensor_data(
     request: Request,
     sensor_types: str,  # Receive as comma-separated string
@@ -122,3 +121,23 @@ async def send_mock_notification(uid = Depends(get_user_id)):
         CustomLogger()._get_logger().info(f"Send mock notification SUCCESS: {{ userId: \"{uid}\" }}")
     except Exception as e:
         CustomLogger()._get_logger().warning(f"Send mock notification FAIL: {{ userId: \"{uid}\" }} {e.args[0]}")
+
+@router.get("/all_sensor_data")
+@limiter.limit("20/minute")
+async def get_all_sensor_data(request: Request, uid: str = Depends(get_user_id)):
+    """
+    Endpoint to get all sensor data for a specific user.
+    """
+    try:
+        data = AppService()._get_all_sensor_data(uid)
+        CustomLogger()._get_logger().info(f"Get all sensor_data SUCCESS: {{ userId: \"{uid}\" }}")
+        return JSONResponse(
+            content=data,
+            status_code=200
+        )
+    except Exception as e:
+        CustomLogger()._get_logger().warning(f"Get all sensor_data FAIL: {{ userId: \"{uid}\" }} {e.args[0]}")
+        return JSONResponse(
+            content={"message": "Internal server error", "detail": str(e.args[0])},
+            status_code=500
+        )
