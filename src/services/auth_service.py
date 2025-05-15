@@ -149,7 +149,7 @@ class AuthService:
         
         return None
     
-    def _refresh_session(self, response: Response, refresh_token: str) -> Optional[str]:
+    def _refresh_session(self, response: Response, refresh_token: str) -> Tuple[Optional[str], Optional[str]]:
         """Refresh the session token using the refresh token.
 
         Args:
@@ -163,16 +163,8 @@ class AuthService:
         if user_id:
             new_session_token = secrets.token_hex(16)
             self.__redis.setex(f"session:{new_session_token}", self.FIELD_SESSION_TTL, user_id)
-            
-            response.set_cookie(
-                key="session_token",
-                value=new_session_token,
-                httponly=True,
-                secure=self.SECURE_MODE,
-                samesite=self.SAMESITE_MODE
-            )
 
-            return new_session_token
+            return user_id, new_session_token
         return None
     
     def _delete_session(self, session_token: str, refresh_token: str) -> bool:

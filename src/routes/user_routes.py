@@ -16,7 +16,7 @@ def get_user_id(request: Request) -> str:
     return request.state.user_id
 
 @router.get("/")
-@limiter.limit("5/minute")
+@limiter.limit("20/minute")
 async def get_user_info(request: Request, uid: str = Depends(get_user_id)):
     try:
         user_data = UserService()._get_user_info(uid)
@@ -30,7 +30,7 @@ async def get_user_info(request: Request, uid: str = Depends(get_user_id)):
             
         
     except Exception as e:
-        CustomLogger()._get_logger().error(f"Get user_data FAIL: {{ userId: \"{uid}\" }} {e.args[0]}")
+        CustomLogger()._get_logger().warning(f"Get user_data FAIL: {{ userId: \"{uid}\" }} {e.args[0]}")
         if e.args[0] == "User not found":
             return JSONResponse(
                 content={"message": e.args[0], "detail": "Can not find any with current session"},
@@ -48,7 +48,7 @@ async def get_user_info(request: Request, uid: str = Depends(get_user_id)):
             )
     
 @router.patch("/")
-@limiter.limit("5/minute")
+@limiter.limit("20/minute")
 async def update_user_info(request: Request, user_info_request: UserInfoRequest, uid: str = Depends(get_user_id)):
     try:
         UserService()._update_user_info(uid, user_info_request)
@@ -61,7 +61,7 @@ async def update_user_info(request: Request, user_info_request: UserInfoRequest,
         )
     
     except Exception as e:
-        CustomLogger()._get_logger().error(f"Update user_data FAIL: {{ userId: \"{uid}\"}} {e.args[0]}")
+        CustomLogger()._get_logger().warning(f"Update user_data FAIL: {{ userId: \"{uid}\"}} {e.args[0]}")
         if e.args[0] == "No data to update":
             return JSONResponse(
                 content={"message": e.args[0], "detail": "Request contain no data to update"},
@@ -79,7 +79,7 @@ async def update_user_info(request: Request, user_info_request: UserInfoRequest,
             )
     
 @router.delete("/")
-@limiter.limit("5/minute")
+@limiter.limit("20/minute")
 async def delete_user_info(request: Request, uid: str = Depends(get_user_id)):
     try:
         UserService()._delete_user_account(uid)
@@ -93,14 +93,14 @@ async def delete_user_info(request: Request, uid: str = Depends(get_user_id)):
         return response
     
     except Exception as e:
-        CustomLogger()._get_logger().error(f"Delete user FAIL: {{ userId: \"{uid}\" }} {e.args[0]}")
+        CustomLogger()._get_logger().warning(f"Delete user FAIL: {{ userId: \"{uid}\" }} {e.args[0]}")
         return JSONResponse(
             content={"message": "Internal server error ", "detail": e.args[0]},
             status_code=500
         )
         
 @router.get("/avatar")
-@limiter.limit("5/minute")
+@limiter.limit("20/minute")
 async def get_user_avatar(request: Request, uid: str = Depends(get_user_id)):
     try:
         file = UserService()._get_avatar(uid)
@@ -109,7 +109,7 @@ async def get_user_avatar(request: Request, uid: str = Depends(get_user_id)):
         return StreamingResponse(file, media_type=file.content_type)
 
     except Exception as e:
-        CustomLogger()._get_logger().error(f"Get user_avatar FAIL: {{ userId: \"{uid}\"}} {e.args[0]}")
+        CustomLogger()._get_logger().warning(f"Get user_avatar FAIL: {{ userId: \"{uid}\"}} {e.args[0]}")
         if e.args[0] == "User not find":
             return JSONResponse(
                 content={"message": e.args[0], "detail": "Can not find any document with the uid that extracted from cookie's session"},
@@ -126,7 +126,7 @@ async def get_user_avatar(request: Request, uid: str = Depends(get_user_id)):
         )
 
 @router.put("/avatar")
-@limiter.limit("5/minute")
+@limiter.limit("20/minute")
 async def update_user_avatar(request: Request, file: UploadFile = File(...), uid: str = Depends(get_user_id)):
     try:
         result = await UserService()._update_avatar(uid, file)
@@ -139,7 +139,7 @@ async def update_user_avatar(request: Request, file: UploadFile = File(...), uid
         )
 
     except Exception as e:
-        CustomLogger()._get_logger().error(f"Update user_avatar FAIL: {{ userId: \"{uid}\"}} {e.args[0]}")
+        CustomLogger()._get_logger().warning(f"Update user_avatar FAIL: {{ userId: \"{uid}\"}} {e.args[0]}")
         if e.args[0] == "User not find":
             return JSONResponse(
                 content={"message": e.args[0], "detail": "Can not find any document with the uid that extracted from cookie's session"},
@@ -151,7 +151,7 @@ async def update_user_avatar(request: Request, file: UploadFile = File(...), uid
         )
 
 @router.delete("/avatar")
-@limiter.limit("5/minute")
+@limiter.limit("20/minute")
 async def delete_user_avatar(request: Request, uid: str = Depends(get_user_id)):
     try:
         UserService()._delete_avatar(uid)
@@ -164,7 +164,7 @@ async def delete_user_avatar(request: Request, uid: str = Depends(get_user_id)):
         )
 
     except Exception as e:
-        CustomLogger()._get_logger().error(f"Delete user_avatar FAIL: {{ userId: \"{uid}\" }} {e.args[0]}")
+        CustomLogger()._get_logger().warning(f"Delete user_avatar FAIL: {{ userId: \"{uid}\" }} {e.args[0]}")
         if e.args[0] == "User not find":
             return JSONResponse(
                 content={"message": e.args[0], "detail": "Can not find any document with the uid that extracted from cookie's session"},

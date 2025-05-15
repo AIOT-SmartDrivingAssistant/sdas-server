@@ -45,14 +45,14 @@ class AppService:
                 while True:
                     notification = await self.client_queues[client_id].get()
                     yield f"data: {json.dumps(notification)}\n\n"
-                    CustomLogger()._get_logger().info(f"Sent notification to client \"{client_id}\": {notification}")
+                    CustomLogger()._get_logger().info(f"Sent notification: {{ userId: \"{client_id}\", notification: {notification} }} ")
                     self.client_queues[client_id].task_done()
 
             except asyncio.CancelledError:
                 async with self._lock:
                     if client_id in self.client_queues and self.client_queues[client_id].empty():
                         del self.client_queues[client_id]
-                CustomLogger()._get_logger().info(f"Closed notification stream for client \"{client_id}\"")
+                CustomLogger()._get_logger().info(f"Closed notification stream: {{ userId: \"{client_id}\" }}")
                 raise
 
         return StreamingResponse(
@@ -97,6 +97,7 @@ class AppService:
         for sensor_type in sensor_types:
             newest_data = self._get_newest_sensor_data(uid, sensor_type)
             if newest_data:
+                newest_data[self.FIELD_TIMESTAMP] = newest_data[self.FIELD_TIMESTAMP].isoformat()
                 data.append(newest_data)
 
         return data
@@ -117,6 +118,21 @@ class AppService:
 
         return data
     
+    def _toggle_all_service_status(self, uid: str, is_turning_on: bool, session):
+        Database()._instance.get_services_status_collection().update_one(
+            { 'uid': uid },
+            {
+                "$set": {
+                    ServicesStatusDocument.FIELD_SYSTEM_STATUS: "on" if is_turning_on else "off",
+                    ServicesStatusDocument.FIELD_AIR_COND_SERVICE: "on" if is_turning_on else "off",
+                    ServicesStatusDocument.FIELD_DIST_SERVICE: "on" if is_turning_on else "off",
+                    ServicesStatusDocument.FIELD_DROWSINESS_SERVICE: "on" if is_turning_on else "off",
+                    ServicesStatusDocument.FIELD_HEADLIGHT_SERVICE: "on" if is_turning_on else "off"
+                }
+            },
+            session=session
+        )
+    
     def _get_all_action_history(self, uid: str = None):
         action_history = Database()._instance.get_action_history_collection().find(
             {
@@ -135,3 +151,25 @@ class AppService:
             data.append(action)
 
         return data
+    
+    def _get_all_sensor_data(self, uid: str = None) -> dict:
+        """Get 20 newest data for each sensor type: temp, humid, dis, lux."""
+        sensor_types = ["temp", "humid", "dis", "lux"]
+        result = {}
+
+        for sensor_type in sensor_types:
+            cursor = Database()._instance.get_env_sensor_collection().find(
+                {self.FIELD_UID: uid, self.FIELD_SENSOR_TYPE: sensor_type},
+                sort=[(self.FIELD_TIMESTAMP, -1)],
+                limit=20
+            )
+            data = []
+            for doc in cursor:
+                doc.pop('_id', None)
+                doc.pop('uid', None)
+                if self.FIELD_TIMESTAMP in doc:
+                    doc[self.FIELD_TIMESTAMP] = doc[self.FIELD_TIMESTAMP].isoformat()
+                data.append(doc)
+            result[sensor_type] = data
+
+        return result
