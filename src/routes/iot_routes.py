@@ -96,7 +96,7 @@ async def control_service(request: Request, control_service_request: ControlServ
             command=value
         )
         CustomLogger()._get_logger().info(f"Control service SUCCESS: {{ type: \"{service_type}\", value: \"{value}\", userId: \"{uid}\" }}")
-            
+        
         return JSONResponse(
             content={"message": "Service control request processed successfully"},
             status_code=200

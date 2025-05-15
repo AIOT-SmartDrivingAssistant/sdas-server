@@ -125,7 +125,7 @@ class AppService:
                 "$set": {
                     ServicesStatusDocument.FIELD_SYSTEM_STATUS: "on" if is_turning_on else "off",
                     ServicesStatusDocument.FIELD_AIR_COND_SERVICE: "on" if is_turning_on else "off",
-                    ServicesStatusDocument.FIELD_DIST_SERVICE: "on" if is_turning_on else "off",
+                    ServicesStatusDocument.FIELD_DISTANCE_SERVICE: "on" if is_turning_on else "off",
                     ServicesStatusDocument.FIELD_DROWSINESS_SERVICE: "on" if is_turning_on else "off",
                     ServicesStatusDocument.FIELD_HEADLIGHT_SERVICE: "on" if is_turning_on else "off"
                 }

@@ -18,7 +18,7 @@ class ServicesStatusDocument():
     FIELD_AIR_COND_SERVICE = 'air_cond_service'
     FIELD_HEADLIGHT_SERVICE = 'headlight_service'
     FIELD_DROWSINESS_SERVICE = 'drowsiness_service'
-    FIELD_DIST_SERVICE = 'dist_service'
+    FIELD_DISTANCE_SERVICE = 'distance_service'
 
     ALL_SERVICE_FIELDS = [FIELD_SYSTEM_STATUS, FIELD_AIR_COND_SERVICE, FIELD_HEADLIGHT_SERVICE, FIELD_DROWSINESS_SERVICE, FIELD_DIST_SERVICE]
 

@@ -14,7 +14,7 @@ class UserInfoRequest(BaseModel):
     date_of_birth: Optional[str] = Field(None, pattern="^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])-[0-9]{4}$")
     
 class SensorDataRequest(BaseModel):
-    sensor_types: list[Literal["temp", "humid", "lux", "dist"]] = Field(..., min_items=1, max_items=4)
+    sensor_types: list[Literal["temp", "humid", "lux", "dis"]] = Field(..., min_items=1, max_items=4)
 
 class ServiceMode(str, Enum):
     AUTO = "auto"
@@ -26,11 +26,11 @@ class ServicesStatusRequest(BaseModel):
     air_cond_service: Optional[ServiceMode] = None
     drowsiness_service: Optional[ServiceMode] = None
     headlight_service: Optional[ServiceMode] = None
-    dist_service: Optional[ServiceMode] = None
+    distance_service: Optional[ServiceMode] = None
     humid_service: Optional[ServiceMode] = None
 
 class ControlServiceRequest(BaseModel):
-    service_type: Literal["air_cond_service", "drowsiness_service", "headlight_service", "dist_service"]
+    service_type: Literal["air_cond_service", "drowsiness_service", "headlight_service", "distance_service", "temp_threshold", "humid_threshold", "lux_threshold", "lux_threshold"]
     value: str = Field(..., pattern=r"^(on|off|[1-9][0-9]*\.?[0-9]*)$")
 
 class IOTDataResponse(BaseModel):
@@ -41,6 +41,6 @@ class IOTDataResponse(BaseModel):
 
 class IOTNotification(BaseModel):
     device_id: str
-    service_type: Literal["air_cond_service", "drowsiness_service", "headlight_service", "dist_service", "system"]
+    service_type: Literal["air_cond_service", "drowsiness_service", "headlight_service", "distance_service", "system"]
     notification: str
     timestamp: str
