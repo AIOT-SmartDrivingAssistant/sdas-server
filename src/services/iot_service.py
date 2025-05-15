@@ -111,7 +111,7 @@ class IOTService:
                             notification={
                                 "service_type": iot_notification.service_type,
                                 "notification": iot_notification.notification,
-                                "timestamp": datetime.now()
+                                "timestamp": datetime.now().isoformat()
                             }
                         )
 
@@ -184,7 +184,17 @@ class IOTService:
 
                     if response.get(self.FIELD_STATUS) == "success":
                         if target == "system":
-                            self.connected_iot_systems[device_id][1] = response.get(self.FIELD_VALUE)
+                            self.connected_iot_systems[device_id][1] = command
+                            AppService()._toggle_all_service_status(device_id, command == "on")
+
+                        await AppService()._add_notification(
+                            client_id=device_id,
+                            notification={
+                                "service_type": target,
+                                "notification": f"Control \"{target}\" successfully with command \"{command}\"!",
+                                "timestamp": datetime.now().isoformat()
+                            }
+                        )
                     
                     else:
                         raise Exception(response.get(self.FIELD_MESSAGE))

@@ -116,7 +116,8 @@ async def send_mock_notification(uid = Depends(get_user_id)):
     try:
         await AppService()._add_notification(uid, {
             "service_type": "mock_service",
-            "description": "Mock notification"
+            "notification": "Mock notification",
+            "timestamp": "2025-05-07 22:15:22"
         })
         CustomLogger()._get_logger().info(f"Send mock notification SUCCESS: {{ userId: \"{uid}\" }}")
     except Exception as e:

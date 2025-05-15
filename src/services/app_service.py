@@ -118,6 +118,20 @@ class AppService:
 
         return data
     
+    def _toggle_all_service_status(self, uid: str = None, is_turning_on: bool = True):
+        Database()._instance.get_services_status_collection().update_one(
+            { 'uid': uid },
+            {
+                "$set": {
+                    ServicesStatusDocument.FIELD_SYSTEM_STATUS: "on" if is_turning_on else "off",
+                    ServicesStatusDocument.FIELD_AIR_COND_SERVICE: "on" if is_turning_on else "off",
+                    ServicesStatusDocument.FIELD_DIST_SERVICE: "on" if is_turning_on else "off",
+                    ServicesStatusDocument.FIELD_DROWSINESS_SERVICE: "on" if is_turning_on else "off",
+                    ServicesStatusDocument.FIELD_HEADLIGHT_SERVICE: "on" if is_turning_on else "off"
+                }
+            }
+        )
+    
     def _get_all_action_history(self, uid: str = None):
         action_history = Database()._instance.get_action_history_collection().find(
             {
