@@ -213,7 +213,6 @@ class IOTService:
                                         session=session
                                     )
                             except Exception as e:
-                                session.abort_transaction()
                                 CustomLogger()._get_logger().error(f"Websocket error: {{ deviceId: \"{device_id}\" }} failed to update database {e}")
                             finally:
                                 session.end_session()
@@ -244,7 +243,6 @@ class IOTService:
                                         session=session
                                     )
                             except Exception as e:
-                                session.abort_transaction()
                                 CustomLogger()._get_logger().error(f"Websocket error: {{ deviceId: \"{device_id}\" }} failed to update database {e}")
                             finally:
                                 session.end_session()
@@ -270,7 +268,7 @@ class IOTService:
             del self.command_responses[device_id][command_id]
 
     def update_services_status(self, uid: str, service_type: str, value: str, session):
-        if (service_type in (ServicesStatusDocument.ALL_VALUE_FIELDS)):
+        if (service_type in (ServicesStatusDocument.ALL_VALUE_FIELDS.value)):
             value = int(value)
                 
         Database()._instance.get_services_status_collection().update_one(

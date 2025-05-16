@@ -25,4 +25,4 @@ class SensorTypes(Enum):
     FIELD_HUMID = "humid"
     FIELD_LUX = "lux"
 
-    ALL_FIELD = [FIELD_TEMP, FIELD_DIS, FIELD_HUMID, FIELD_LUX]
+    # ALL_FIELD = [FIELD_TEMP, FIELD_DIS, FIELD_HUMID, FIELD_LUX]

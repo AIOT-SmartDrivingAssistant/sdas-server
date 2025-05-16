@@ -165,11 +165,11 @@ class AppService:
         result = {}
         min_interval = datetime.timedelta(seconds=10)
 
-        for sensor_type in SensorTypes.ALL_FIELD:
+        for sensor_type in SensorTypes:
             cursor = Database()._instance.get_env_sensor_collection().find(
                 {
                     EnvironmentSensorDocument.FIELD_UID.value: uid,
-                    EnvironmentSensorDocument.FIELD_SENSOR_TYPE.value: sensor_type
+                    EnvironmentSensorDocument.FIELD_SENSOR_TYPE.value: sensor_type.value
                 },
                 sort=[(EnvironmentSensorDocument.FIELD_TIMESTAMP.value, -1)],
                 limit=100
@@ -190,7 +190,7 @@ class AppService:
                         last_timestamp = ts
                 if len(data) >= 20:
                     break
-            result[sensor_type] = data
+            result[sensor_type.value] = data
 
         return result
     
