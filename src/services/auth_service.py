@@ -71,7 +71,7 @@ class AuthService:
             PyMongoError: If there is an error during the database transaction.
         '''
 
-        if Database()._instance.get_user_collection().find_one({UserDocument.FIELD_USERNAME: user_request.username}):
+        if Database()._instance.get_user_collection().find_one({UserDocument.FIELD_USERNAME.value: user_request.username}):
             raise Exception("Username already exists")
         
         hashed_pw = self._hash_pw(user_request.password)
@@ -112,9 +112,9 @@ class AuthService:
         '''
 
         user = Database()._instance.get_user_collection().find_one({
-            UserDocument.FIELD_USERNAME: user_request.username
+            UserDocument.FIELD_USERNAME.value: user_request.username
         })
-        if not (user and self._verify_pw(user[UserDocument.FIELD_PASSWORD], user_request.password)):
+        if not (user and self._verify_pw(user[UserDocument.FIELD_PASSWORD.value], user_request.password)):
             raise Exception("Invalid credentials")
         
         userId = str(user['_id'])
