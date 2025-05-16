@@ -20,13 +20,31 @@ class ServicesStatusDocument():
     FIELD_DROWSINESS_SERVICE = 'drowsiness_service'
     FIELD_DISTANCE_SERVICE = 'distance_service'
 
-    ALL_SERVICE_FIELDS = [FIELD_SYSTEM_STATUS, FIELD_AIR_COND_SERVICE, FIELD_HEADLIGHT_SERVICE, FIELD_DROWSINESS_SERVICE, FIELD_DIST_SERVICE]
+    ALL_SERVICE_FIELDS = [FIELD_SYSTEM_STATUS,
+                        FIELD_AIR_COND_SERVICE,
+                        FIELD_HEADLIGHT_SERVICE,
+                        FIELD_DROWSINESS_SERVICE,
+                        FIELD_DISTANCE_SERVICE
+                        ]
 
     FIELD_AIR_COND_TEMP = 'air_cond_temp'
     FIELD_HEADLIGHT_BRIGHTNESS = 'headlight_brightness'
-    FIELD_DROWSINESS_THRESHOLD = 'drowsiness_threshold'
 
-    ALL_VALUE_FIELDS = [FIELD_AIR_COND_TEMP, FIELD_HEADLIGHT_BRIGHTNESS, FIELD_DROWSINESS_THRESHOLD]
+    FIELD_DROWSINESS_THRESHOLD = 'drowsiness_threshold'
+    FIELD_TEMPERATURE_THRESHOLD = 'temp_threshold'
+    FIELD_HUMIDITY_THRESHOLD = 'humid_threshold'
+    FIELD_DISTANCE_THRESHOLD = 'distance_threshold'
+    FIELD_LUX_THRESHOLD = 'lux_threshold'
+
+
+    ALL_VALUE_FIELDS = [FIELD_AIR_COND_TEMP,
+                        FIELD_HEADLIGHT_BRIGHTNESS,
+                        FIELD_DROWSINESS_THRESHOLD,
+                        FIELD_TEMPERATURE_THRESHOLD,
+                        FIELD_HUMIDITY_THRESHOLD,
+                        FIELD_DISTANCE_THRESHOLD,
+                        FIELD_LUX_THRESHOLD
+                        ]
 
 class ActionHistoryDocument():
     FIELD_UID = 'uid'
