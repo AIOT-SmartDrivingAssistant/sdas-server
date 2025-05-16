@@ -123,6 +123,21 @@ class IOTService:
                     IotNotification.FIELD_TIMESTAMP.value: datetime.now().isoformat()
                 }
             )
+            session = Database()._instance.client.start_session()
+            try:
+                with session.start_transaction():
+                    AppService()._toggle_all_service_status(device_id, False, session)
+                    self.write_action_history(
+                        uid=device_id,
+                        service_type="system",
+                        value="off",
+                        session=session
+                    )
+            except Exception as e:
+                session.abort_transaction()
+                CustomLogger()._get_logger().error(f"Websocket error: {{ deviceId: \"{device_id}\" }} failed to update database {e}")
+            finally:
+                session.end_session()
 
         except Exception as e:
             CustomLogger()._get_logger().error(f"Websocket error: {{ deviceId: \"{device_id}\" }} {e}")
@@ -205,18 +220,26 @@ class IOTService:
 
                         else:
                             # TODO: update db
+                            write_type = target
+                            if (value not in ['on', 'off']):
+                                if (target == ServicesStatusDocument.FIELD_AIR_COND_SERVICE.value):
+                                    write_type = ServicesStatusDocument.FIELD_AIR_COND_TEMP.value
+
+                                elif (target == ServicesStatusDocument.FIELD_HEADLIGHT_SERVICE.value):
+                                    write_type = ServicesStatusDocument.FIELD_HEADLIGHT_BRIGHTNESS.value
+
                             session = Database()._instance.client.start_session()
                             try:
                                 with session.start_transaction():
                                     self.update_service_status(
                                         uid=device_id,
-                                        service_type=target,
+                                        service_type=write_type,
                                         value=value,
                                         session=session
                                     )
                                     self.write_action_history(
                                         uid=device_id,
-                                        service_type=target,
+                                        service_type=write_type,
                                         value=value,
                                         session=session
                                     )
@@ -247,23 +270,11 @@ class IOTService:
             del self.command_responses[device_id][command_id]
 
     def update_service_status(self, uid: str, service_type: str, value: str, session):
-        write_type = None
-
-        if value in ["on", "off"]:
-            write_type = service_type
-        else:
-            if service_type == ServicesStatusDocument.FIELD_DROWSINESS_SERVICE.value:
-                write_type = ServicesStatusDocument.FIELD_DROWSINESS_THRESHOLD.value
-            elif service_type == ServicesStatusDocument.FIELD_AIR_COND_SERVICE.value:
-                write_type = ServicesStatusDocument.FIELD_AIR_COND_TEMP.value
-            else:
-                write_type = ServicesStatusDocument.FIELD_HEADLIGHT_BRIGHTNESS.value
-
         Database()._instance.get_services_status_collection().update_one(
-            { uid: uid },
+            { ServicesStatusDocument.FIELD_UID.value: uid },
             {
                 "$set": {
-                    write_type: value
+                    service_type: value
                 }
             },
             session=session
