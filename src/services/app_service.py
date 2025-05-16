@@ -69,7 +69,16 @@ class AppService:
             init_services_status_data[field] = "off"
 
         for field in ServicesStatusDocument.ALL_VALUE_FIELDS.value:
-            init_services_status_data[field] = 0
+            if field == ServicesStatusDocument.FIELD_TEMPERATURE_THRESHOLD.value:
+                init_services_status_data[field] = 40
+            elif field == ServicesStatusDocument.FIELD_HUMIDITY_THRESHOLD.value:
+                init_services_status_data[field] = 70
+            elif field == ServicesStatusDocument.FIELD_DISTANCE_THRESHOLD.value:
+                init_services_status_data[field] = 10
+            elif field == ServicesStatusDocument.FIELD_LUX_THRESHOLD.value:
+                init_services_status_data[field] = 20
+            else:
+                init_services_status_data[field] = 0
 
         return init_services_status_data
 
