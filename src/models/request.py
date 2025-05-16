@@ -26,11 +26,11 @@ class ServicesStatusRequest(BaseModel):
     air_cond_service: Optional[ServiceMode] = None
     drowsiness_service: Optional[ServiceMode] = None
     headlight_service: Optional[ServiceMode] = None
-    dist_service: Optional[ServiceMode] = None
+    distance_service: Optional[ServiceMode] = None
     humid_service: Optional[ServiceMode] = None
 
 class ControlServiceRequest(BaseModel):
-    service_type: Literal["air_cond_service", "drowsiness_service", "headlight_service", "distance_service"]
+    service_type: Literal["air_cond_service", "drowsiness_service", "headlight_service", "distance_service", "temp_threshold", "humid_threshold", "dis_threshold", "lux_threshold"]
     value: str = Field(..., pattern=r"^(on|off|[1-9][0-9]*\.?[0-9]*)$")
 
 class IOTDataResponse(BaseModel):

@@ -2,6 +2,8 @@ import asyncio
 import json
 from typing import Dict
 
+import datetime
+
 from fastapi.responses import StreamingResponse
 from models.common import SensorTypes
 from utils.custom_logger import CustomLogger
@@ -152,6 +154,7 @@ class AppService:
     def _get_all_sensor_data(self, uid: str = None) -> dict:
         """Get 20 newest data for each sensor type: temp, humid, dis, lux."""
         result = {}
+        min_interval = datetime.timedelta(seconds=10)
 
         for sensor_type in SensorTypes.ALL_FIELD:
             cursor = Database()._instance.get_env_sensor_collection().find(
@@ -160,15 +163,25 @@ class AppService:
                     EnvironmentSensorDocument.FIELD_SENSOR_TYPE.value: sensor_type
                 },
                 sort=[(EnvironmentSensorDocument.FIELD_TIMESTAMP.value, -1)],
-                limit=20
+                limit=100
             )
             data = []
+            last_timestamp = None
             for doc in cursor:
                 doc.pop('_id', None)
-                doc.pop(EnvironmentSensorDocument.FIELD_UID.value, None)
+                doc.pop('uid', None)
                 if EnvironmentSensorDocument.FIELD_TIMESTAMP.value in doc:
-                    doc[EnvironmentSensorDocument.FIELD_TIMESTAMP.value] = doc[EnvironmentSensorDocument.FIELD_TIMESTAMP.value]
-                data.append(doc)
+                    ts = doc[EnvironmentSensorDocument.FIELD_TIMESTAMP.value]
+                    # Convert to datetime if needed
+                    if isinstance(ts, str):
+                        ts = datetime.datetime.fromisoformat(ts)
+                    if last_timestamp is None or (last_timestamp - ts) >= min_interval:
+                        doc[EnvironmentSensorDocument.FIELD_TIMESTAMP.value] = ts.isoformat()
+                        data.append(doc)
+                        last_timestamp = ts
+                if len(data) >= 20:
+                    break
             result[sensor_type] = data
 
         return result
+    
