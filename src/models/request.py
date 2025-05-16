@@ -41,6 +41,6 @@ class IOTDataResponse(BaseModel):
 
 class IOTNotification(BaseModel):
     device_id: str
-    service_type: Literal["air_cond_service", "drowsiness_service", "headlight_service", "distance_service", "system"]
+    service_type: Literal["air_cond_service", "drowsiness_service", "headlight_service", "distance_service", "system", "alarm_service"]
     description: str
     timestamp: str
