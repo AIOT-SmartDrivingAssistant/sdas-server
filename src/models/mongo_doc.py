@@ -1,4 +1,6 @@
-class UserDocument():
+from enum import Enum
+
+class UserDocument(Enum):
     FIELD_USERNAME = 'username'
     FIELD_PASSWORD = 'password'
 
@@ -11,7 +13,7 @@ class UserDocument():
 
     ALL_BASIC_FIELDS = [FIELD_NAME, FIELD_EMAIL, FIELD_PHONE, FIELD_ADDRESS, FIELD_DOB]
 
-class ServicesStatusDocument():
+class ServicesStatusDocument(Enum):
     FIELD_UID = 'uid'
 
     FIELD_SYSTEM_STATUS = 'system_status'
@@ -46,7 +48,7 @@ class ServicesStatusDocument():
                         FIELD_LUX_THRESHOLD
                         ]
 
-class ActionHistoryDocument():
+class ActionHistoryDocument(Enum):
     FIELD_UID = 'uid'
 
     FIELD_SERVICE_TYPE = 'service_type'
@@ -54,3 +56,10 @@ class ActionHistoryDocument():
     FIELD_TIMESTAMP = 'timestamp'
 
     ALL_BASIC_FIELDS = [FIELD_SERVICE_TYPE, FIELD_DESCRIPTION, FIELD_TIMESTAMP]
+
+class EnvironmentSensorDocument(Enum):
+    FIELD_UID = 'uid'
+
+    FIELD_SENSOR_TYPE = "sensor_type"
+    FIELD_VALUE = "value"
+    FIELD_TIMESTAMP = "timestamp"

@@ -14,7 +14,7 @@ class CustomLogger:
     _instance = None
     LOG_FORMAT = "%(message)s"
     DATE_FORMAT = "[%Y-%m-%d %H:%M:%S]"
-    LOG_DIR = "sdas-server/logs"
+    LOG_DIR = "logs"
     LOG_FILE = "backend"
     MAX_BYTES = 10 * 1024 * 1024  # 10MB
     BACKUP_COUNT = 5

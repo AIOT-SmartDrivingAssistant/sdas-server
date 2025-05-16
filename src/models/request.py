@@ -11,7 +11,7 @@ class UserInfoRequest(BaseModel):
     email: Optional[str] = Field(None, email=True)
     phone: Optional[str] = Field(None, min_length=10, max_length=10, pattern="^[0-9]*$")
     address: Optional[str] = Field(None, min_length=3, max_length=100)
-    date_of_birth: Optional[str] = Field(None, pattern="^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])-[0-9]{4}$")
+    date_of_birth: Optional[str] = Field(None, pattern="^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$")
     
 class SensorDataRequest(BaseModel):
     sensor_types: list[Literal["temp", "humid", "lux", "dis"]] = Field(..., min_items=1, max_items=4)
@@ -42,5 +42,5 @@ class IOTDataResponse(BaseModel):
 class IOTNotification(BaseModel):
     device_id: str
     service_type: Literal["air_cond_service", "drowsiness_service", "headlight_service", "distance_service", "system"]
-    notification: str
+    description: str
     timestamp: str
