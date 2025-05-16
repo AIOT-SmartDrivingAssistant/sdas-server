@@ -231,7 +231,7 @@ class IOTService:
                             session = Database()._instance.client.start_session()
                             try:
                                 with session.start_transaction():
-                                    self.update_service_status(
+                                    self.update_services_status(
                                         uid=device_id,
                                         service_type=write_type,
                                         value=value,
@@ -269,7 +269,10 @@ class IOTService:
         if device_id in self.command_responses and command_id in self.command_responses[device_id]:
             del self.command_responses[device_id][command_id]
 
-    def update_service_status(self, uid: str, service_type: str, value: str, session):
+    def update_services_status(self, uid: str, service_type: str, value: str, session):
+        if (service_type in (ServicesStatusDocument.ALL_VALUE_FIELDS)):
+            value = int(value)
+                
         Database()._instance.get_services_status_collection().update_one(
             { ServicesStatusDocument.FIELD_UID.value: uid },
             {

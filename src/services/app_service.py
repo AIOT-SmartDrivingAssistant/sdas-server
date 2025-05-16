@@ -146,7 +146,7 @@ class AppService:
             {
                 ActionHistoryDocument.FIELD_UID.value: uid
             },
-            sort=[(self.FIELD_TIMESTAMP, -1)],  # Sort by timestamp in descending order
+            sort=[(ActionHistoryDocument.FIELD_TIMESTAMP.value, -1)],  # Sort by timestamp in descending order
             limit=15
         )
 
