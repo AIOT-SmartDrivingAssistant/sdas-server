@@ -2,19 +2,18 @@ import asyncio
 import json
 from typing import Dict
 
+import datetime
+
 from fastapi.responses import StreamingResponse
+from models.common import SensorTypes
 from utils.custom_logger import CustomLogger
 from services.database import Database
+
 from models.request import SensorDataRequest
-from models.mongo_doc import ServicesStatusDocument
+from models.mongo_doc import ActionHistoryDocument, EnvironmentSensorDocument, ServicesStatusDocument
 
 class AppService:
     _instance = None
-
-    FIELD_UID = "uid"
-    FIELD_SENSOR_TYPE = "sensor_type"
-    FIELD_TIMESTAMP = "timestamp"
-    FIELD_VAL = "val"
 
     def __new__(cls):
         if not cls._instance:
@@ -64,13 +63,22 @@ class AppService:
     def _create_init_services_status_data(self, uid: str = None):
         init_services_status_data = {}
 
-        init_services_status_data[ServicesStatusDocument.FIELD_UID] = uid if uid else ""
+        init_services_status_data[ServicesStatusDocument.FIELD_UID.value] = uid if uid else ""
 
-        for field in ServicesStatusDocument.ALL_SERVICE_FIELDS:
+        for field in ServicesStatusDocument.ALL_SERVICE_FIELDS.value:
             init_services_status_data[field] = "off"
 
-        for field in ServicesStatusDocument.ALL_VALUE_FIELDS:
-            init_services_status_data[field] = 0
+        for field in ServicesStatusDocument.ALL_VALUE_FIELDS.value:
+            if field == ServicesStatusDocument.FIELD_TEMPERATURE_THRESHOLD.value:
+                init_services_status_data[field] = 40
+            elif field == ServicesStatusDocument.FIELD_HUMIDITY_THRESHOLD.value:
+                init_services_status_data[field] = 70
+            elif field == ServicesStatusDocument.FIELD_DISTANCE_THRESHOLD.value:
+                init_services_status_data[field] = 10
+            elif field == ServicesStatusDocument.FIELD_LUX_THRESHOLD.value:
+                init_services_status_data[field] = 20
+            else:
+                init_services_status_data[field] = 5
 
         return init_services_status_data
 
@@ -78,10 +86,10 @@ class AppService:
         """Get the newest sensor data for a specific user and sensor type."""
         data = Database()._instance.get_env_sensor_collection().find_one(
             {
-                self.FIELD_UID: uid,
-                self.FIELD_SENSOR_TYPE: sensor_type
+                EnvironmentSensorDocument.FIELD_UID.value: uid,
+                EnvironmentSensorDocument.FIELD_SENSOR_TYPE.value: sensor_type
             },
-            sort=[(self.FIELD_TIMESTAMP, -1)]  # Sort by timestamp in descending order
+            sort=[(EnvironmentSensorDocument.FIELD_TIMESTAMP.value, -1)]  # Sort by timestamp in descending order
         )
 
         if data and data['_id']:
@@ -97,7 +105,7 @@ class AppService:
         for sensor_type in sensor_types:
             newest_data = self._get_newest_sensor_data(uid, sensor_type)
             if newest_data:
-                newest_data[self.FIELD_TIMESTAMP] = newest_data[self.FIELD_TIMESTAMP].isoformat()
+                newest_data[EnvironmentSensorDocument.FIELD_TIMESTAMP.value] = newest_data[EnvironmentSensorDocument.FIELD_TIMESTAMP.value]
                 data.append(newest_data)
 
         return data
@@ -110,24 +118,36 @@ class AppService:
             raise Exception("Service config not find")
         
         data = {}
-        for key in ServicesStatusDocument.ALL_SERVICE_FIELDS:
+        for key in ServicesStatusDocument.ALL_SERVICE_FIELDS.value:
             data[key] = services_status[key]
 
-        for key in ServicesStatusDocument.ALL_VALUE_FIELDS:
+        for key in ServicesStatusDocument.ALL_VALUE_FIELDS.value:
             data[key] = services_status[key]
 
         return data
     
     def _toggle_all_service_status(self, uid: str, is_turning_on: bool, session):
+        data = {
+            ServicesStatusDocument.FIELD_SYSTEM_STATUS.value: "on" if is_turning_on else "off",
+            ServicesStatusDocument.FIELD_AIR_COND_SERVICE.value: "on" if is_turning_on else "off",
+            ServicesStatusDocument.FIELD_DISTANCE_SERVICE.value: "on" if is_turning_on else "off",
+            ServicesStatusDocument.FIELD_DROWSINESS_SERVICE.value: "on" if is_turning_on else "off",
+            ServicesStatusDocument.FIELD_HEADLIGHT_SERVICE.value: "on" if is_turning_on else "off",
+        }
+        if (not is_turning_on):
+            data[ServicesStatusDocument.FIELD_AIR_COND_TEMP.value] = 0
+            data[ServicesStatusDocument.FIELD_HEADLIGHT_BRIGHTNESS.value] = 0
+            
+
         Database()._instance.get_services_status_collection().update_one(
             { 'uid': uid },
             {
                 "$set": {
-                    ServicesStatusDocument.FIELD_SYSTEM_STATUS: "on" if is_turning_on else "off",
-                    ServicesStatusDocument.FIELD_AIR_COND_SERVICE: "on" if is_turning_on else "off",
-                    ServicesStatusDocument.FIELD_DIST_SERVICE: "on" if is_turning_on else "off",
-                    ServicesStatusDocument.FIELD_DROWSINESS_SERVICE: "on" if is_turning_on else "off",
-                    ServicesStatusDocument.FIELD_HEADLIGHT_SERVICE: "on" if is_turning_on else "off"
+                    ServicesStatusDocument.FIELD_SYSTEM_STATUS.value: "on" if is_turning_on else "off",
+                    ServicesStatusDocument.FIELD_AIR_COND_SERVICE.value: "on" if is_turning_on else "off",
+                    ServicesStatusDocument.FIELD_DISTANCE_SERVICE.value: "on" if is_turning_on else "off",
+                    ServicesStatusDocument.FIELD_DROWSINESS_SERVICE.value: "on" if is_turning_on else "off",
+                    ServicesStatusDocument.FIELD_HEADLIGHT_SERVICE.value: "on" if is_turning_on else "off",
                 }
             },
             session=session
@@ -136,17 +156,17 @@ class AppService:
     def _get_all_action_history(self, uid: str = None):
         action_history = Database()._instance.get_action_history_collection().find(
             {
-                "uid": uid
+                ActionHistoryDocument.FIELD_UID.value: uid
             },
-            sort=[(self.FIELD_TIMESTAMP, -1)],  # Sort by timestamp in descending order
+            sort=[(ActionHistoryDocument.FIELD_TIMESTAMP.value, -1)],  # Sort by timestamp in descending order
             limit=15
         )
 
         data = []
         for action in action_history:
             action['_id'] = str(action['_id'])
-            action[self.FIELD_TIMESTAMP] = action[self.FIELD_TIMESTAMP].isoformat()
-            action.pop(self.FIELD_UID, None)
+            action[ActionHistoryDocument.FIELD_TIMESTAMP.value] = action[ActionHistoryDocument.FIELD_TIMESTAMP.value]
+            action.pop(ActionHistoryDocument.FIELD_UID.value, None)
             action.pop('_id', None)
             data.append(action)
 
@@ -154,22 +174,35 @@ class AppService:
     
     def _get_all_sensor_data(self, uid: str = None) -> dict:
         """Get 20 newest data for each sensor type: temp, humid, dis, lux."""
-        sensor_types = ["temp", "humid", "dis", "lux"]
         result = {}
+        min_interval = datetime.timedelta(seconds=10)
 
-        for sensor_type in sensor_types:
+        for sensor_type in SensorTypes:
             cursor = Database()._instance.get_env_sensor_collection().find(
-                {self.FIELD_UID: uid, self.FIELD_SENSOR_TYPE: sensor_type},
-                sort=[(self.FIELD_TIMESTAMP, -1)],
-                limit=20
+                {
+                    EnvironmentSensorDocument.FIELD_UID.value: uid,
+                    EnvironmentSensorDocument.FIELD_SENSOR_TYPE.value: sensor_type.value
+                },
+                sort=[(EnvironmentSensorDocument.FIELD_TIMESTAMP.value, -1)],
+                limit=100
             )
             data = []
+            last_timestamp = None
             for doc in cursor:
                 doc.pop('_id', None)
                 doc.pop('uid', None)
-                if self.FIELD_TIMESTAMP in doc:
-                    doc[self.FIELD_TIMESTAMP] = doc[self.FIELD_TIMESTAMP].isoformat()
-                data.append(doc)
-            result[sensor_type] = data
+                if EnvironmentSensorDocument.FIELD_TIMESTAMP.value in doc:
+                    ts = doc[EnvironmentSensorDocument.FIELD_TIMESTAMP.value]
+                    # Convert to datetime if needed
+                    if isinstance(ts, str):
+                        ts = datetime.datetime.fromisoformat(ts)
+                    if last_timestamp is None or (last_timestamp - ts) >= min_interval:
+                        doc[EnvironmentSensorDocument.FIELD_TIMESTAMP.value] = ts.isoformat()
+                        data.append(doc)
+                        last_timestamp = ts
+                if len(data) >= 20:
+                    break
+            result[sensor_type.value] = data
 
         return result
+    

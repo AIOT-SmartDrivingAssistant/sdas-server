@@ -1,28 +1,21 @@
+from utils.custom_logger import CustomLogger
+
 import asyncio
 from datetime import datetime
 import uuid
 
 from services.database import Database
-from models.request import IOTDataResponse, IOTNotification
 from services.app_service import AppService
-from utils.custom_logger import CustomLogger
+
+from models.request import IOTDataResponse, IOTNotification
+from models.common import IotCommand, IotCommandResponse, IotNotification
+from models.mongo_doc import ActionHistoryDocument, ServicesStatusDocument
 
 from typing import Dict
 from fastapi import WebSocket, WebSocketDisconnect
 
 class IOTService:
     _instance = None
-
-    FIELD_TARGET = "target"
-    FIELD_VALUE = "value"
-
-    FIELD_COMMAND = "command"
-    FIELD_COMMAND_ID = "command_id"
-    FIELD_STATUS = "status"
-    FIELD_MESSAGE = "message"
-    
-    FIELD_SERVICE_TYPE = "service_type"
-    FIELD_NOTIFICATION = "notification"
 
     def __new__(cls, *args, **kwargs):
         if not cls._instance:
@@ -67,7 +60,7 @@ class IOTService:
                     await websocket.send_json({"error": "Invalid data"})
                     continue
 
-                if self.FIELD_COMMAND_ID in data and self.FIELD_STATUS in data:
+                if IotCommandResponse.FIELD_COMMAND_ID.value in data and IotCommandResponse.FIELD_STATUS.value in data:
                     # Data is a command's response
                     try:
                         iot_data = IOTDataResponse(**data)
@@ -77,7 +70,7 @@ class IOTService:
                             await websocket.send_json({"error": "Device ID mismatch"})
                             continue
                         
-                        command_id = data[self.FIELD_COMMAND_ID]
+                        command_id = data[IotCommandResponse.FIELD_COMMAND_ID.value]
                         
                         async with self.device_locks.get(device_id, asyncio.Lock()):
                             if device_id in self.pending_commands and command_id in self.pending_commands[device_id]:
@@ -95,7 +88,7 @@ class IOTService:
                         CustomLogger()._get_logger().error(f"Websocket error: {{ deviceId: \"{device_id}\" }} invalid response {e}")
                         await websocket.send_json({"error": "Invalid response"})
 
-                elif self.FIELD_NOTIFICATION in data:
+                elif IotNotification.FIELD_DESCRIPTION.value in data:
                     # Data is a notification
                     try:
                         iot_notification = IOTNotification(**data)
@@ -105,14 +98,14 @@ class IOTService:
                             await websocket.send_json({"error": "Device ID mismatch"})
                             continue
 
-                        CustomLogger()._get_logger().info(f"Websocket notification: {{ deviceId: \"{device_id}\", service_type \"{iot_notification.service_type}\", notification \"{iot_notification.notification}\" }}")
+                        CustomLogger()._get_logger().info(f"Websocket notification: {{ deviceId: \"{device_id}\", service_type \"{iot_notification.service_type}\", notification \"{iot_notification.description}\" }}")
 
                         await AppService()._add_notification(
                             client_id=device_id,
                             notification={
-                                "service_type": iot_notification.service_type,
-                                "notification": iot_notification.notification,
-                                "timestamp": iot_notification.timestamp,
+                                IotNotification.FIELD_SERVICE_TYPE.value: iot_notification.service_type,
+                                IotNotification.FIELD_DESCRIPTION.value: iot_notification.description,
+                                IotNotification.FIELD_TIMESTAMP.value: iot_notification.timestamp,
                             }
                         )
 
@@ -125,11 +118,26 @@ class IOTService:
             await AppService()._add_notification(
                 client_id=device_id,
                 notification={
-                    "service_type": "system",
-                    "notification": "Device disconnected",
-                    "timestamp": datetime.now().isoformat()
+                    IotNotification.FIELD_SERVICE_TYPE.value: "system",
+                    IotNotification.FIELD_DESCRIPTION.value: "Device disconnected",
+                    IotNotification.FIELD_TIMESTAMP.value: datetime.now().isoformat()
                 }
             )
+            session = Database()._instance.client.start_session()
+            try:
+                with session.start_transaction():
+                    AppService()._toggle_all_service_status(device_id, False, session)
+                    self.write_action_history(
+                        uid=device_id,
+                        service_type="system",
+                        value="off",
+                        session=session
+                    )
+            except Exception as e:
+                session.abort_transaction()
+                CustomLogger()._get_logger().error(f"Websocket error: {{ deviceId: \"{device_id}\" }} failed to update database {e}")
+            finally:
+                session.end_session()
 
         except Exception as e:
             CustomLogger()._get_logger().error(f"Websocket error: {{ deviceId: \"{device_id}\" }} {e}")
@@ -153,7 +161,7 @@ class IOTService:
                 if device_id in self.device_locks:
                     del self.device_locks[device_id]
 
-    async def _control_iot_system(self, device_id: str, target: str, command: str):
+    async def _control_iot_system(self, device_id: str, target: str, value: str):
         async with self.global_lock:
             if device_id not in self.connected_iot_systems:
                 CustomLogger()._get_logger().warning(f"Websocket error: {{ deviceId: \"{device_id}\" }} not connected")
@@ -162,11 +170,11 @@ class IOTService:
         try:
             command_id = str(uuid.uuid4())
             data = {
-                self.FIELD_COMMAND: {
-                    self.FIELD_TARGET: target,
-                    self.FIELD_VALUE: command
+                IotCommand.FIELD_COMMAND.value: {
+                    IotCommand.FIELD_TARGET.value: target,
+                    IotCommand.FIELD_VALUE.value: value
                 },
-                self.FIELD_COMMAND_ID: command_id
+                IotCommand.FIELD_COMMAND_ID.value: command_id
             }
 
             async with self.device_locks.get(device_id, asyncio.Lock()):
@@ -175,7 +183,7 @@ class IOTService:
             websocket = self.connected_iot_systems[device_id][0]
             await websocket.send_json(data)
 
-            CustomLogger()._get_logger().info(f"Websocket command sent: {{ deviceId: \"{device_id}\", command_id \"{command_id}\", target \"{target}\", command \"{command}\" }}")
+            CustomLogger()._get_logger().info(f"Websocket command sent: {{ deviceId: \"{device_id}\", command_id \"{command_id}\", target \"{target}\", command \"{value}\" }}")
 
             try:
                 await asyncio.wait_for(self.pending_commands[device_id][command_id].wait(), timeout=5.0)
@@ -191,50 +199,56 @@ class IOTService:
                     response = self.command_responses[device_id][command_id]
                     await self._cleanup_command(device_id, command_id)
 
-                    if response.get(self.FIELD_STATUS) == "success":
+                    if response.get(IotCommandResponse.FIELD_STATUS.value) == "success":
                         if target == "system":
-                            self.connected_iot_systems[device_id][1] = command
+                            self.connected_iot_systems[device_id][1] = value
                             session = Database()._instance.client.start_session()
                             try:
                                 with session.start_transaction():
-                                    AppService()._toggle_all_service_status(device_id, command == "on", session)
+                                    AppService()._toggle_all_service_status(device_id, value == "on", session)
                                     self.write_action_history(
                                         uid=device_id,
                                         service_type=target,
-                                        command=command,
+                                        value=value,
                                         session=session
                                     )
                             except Exception as e:
-                                session.abort_transaction()
                                 CustomLogger()._get_logger().error(f"Websocket error: {{ deviceId: \"{device_id}\" }} failed to update database {e}")
                             finally:
                                 session.end_session()
 
                         else:
                             # TODO: update db
+                            write_type = target
+                            if (value not in ['on', 'off']):
+                                if (target == ServicesStatusDocument.FIELD_AIR_COND_SERVICE.value):
+                                    write_type = ServicesStatusDocument.FIELD_AIR_COND_TEMP.value
+
+                                elif (target == ServicesStatusDocument.FIELD_HEADLIGHT_SERVICE.value):
+                                    write_type = ServicesStatusDocument.FIELD_HEADLIGHT_BRIGHTNESS.value
+
                             session = Database()._instance.client.start_session()
                             try:
                                 with session.start_transaction():
-                                    self.update_service_status(
+                                    self.update_services_status(
                                         uid=device_id,
-                                        service_type=target,
-                                        command=command,
+                                        service_type=write_type,
+                                        value=value,
                                         session=session
                                     )
                                     self.write_action_history(
                                         uid=device_id,
-                                        service_type=target,
-                                        command=command,
+                                        service_type=write_type,
+                                        value=value,
                                         session=session
                                     )
                             except Exception as e:
-                                session.abort_transaction()
                                 CustomLogger()._get_logger().error(f"Websocket error: {{ deviceId: \"{device_id}\" }} failed to update database {e}")
                             finally:
                                 session.end_session()
                     
                     else:
-                        raise Exception(response.get(self.FIELD_MESSAGE))
+                        raise Exception(response.get(IotCommandResponse.FIELD_MESSAGE.value))
                     
                 else:
                     raise Exception("No response received")
@@ -253,35 +267,26 @@ class IOTService:
         if device_id in self.command_responses and command_id in self.command_responses[device_id]:
             del self.command_responses[device_id][command_id]
 
-    def update_service_status(self, uid: str, service_type: str, command: str, session):
-        write_type = None
-
-        if command in ["on", "off"]:
-            write_type = service_type
-        else:
-            if service_type.startswith('drowsiness'):
-                write_type = 'drowsiness_threshold'
-            elif service_type.startswith('air_cond'):
-                write_type = 'air_cond_temp'
-            else:
-                write_type = 'headlight_brightness' 
-
+    def update_services_status(self, uid: str, service_type: str, value: str, session):
+        if (service_type in (ServicesStatusDocument.ALL_VALUE_FIELDS.value)):
+            value = int(value)
+                
         Database()._instance.get_services_status_collection().update_one(
-            { uid: uid },
+            { ServicesStatusDocument.FIELD_UID.value: uid },
             {
                 "$set": {
-                    write_type: command
+                    service_type: value
                 }
             },
             session=session
         )
 
-    def write_action_history(self, uid: str, service_type: str, command: str, session):
+    def write_action_history(self, uid: str, service_type: str, value: str, session):
         action = {
-            "uid": uid,
-            "service_type": service_type,
-            "description": f"{service_type} set to {command}",
-            "timestamp": datetime.now().isoformat()
+            ActionHistoryDocument.FIELD_UID.value: uid,
+            ActionHistoryDocument.FIELD_SERVICE_TYPE.value: service_type,
+            ActionHistoryDocument.FIELD_DESCRIPTION.value: f"{service_type} set to {value}",
+            ActionHistoryDocument.FIELD_TIMESTAMP.value: datetime.now().isoformat()
         }
 
         Database()._instance.get_action_history_collection().insert_one(

@@ -51,7 +51,7 @@ async def turn_on(request: Request, uid: str = Depends(get_user_id)):
         await IOTService()._control_iot_system(
             device_id=uid,
             target="system",
-            command="on"
+            value="on"
         )
         CustomLogger()._get_logger().info(f"Started system SUCCESS: {{ userId: \"{uid}\" }}")
         return JSONResponse(content={"message": "System started successfully"}, status_code=200)
@@ -71,7 +71,7 @@ async def turn_off(request: Request, uid: str = Depends(get_user_id)):
         await IOTService()._control_iot_system(
             device_id=uid,
             target="system",
-            command="off"
+            value="off"
         )
         CustomLogger()._get_logger().info(f"Stopped system SUCCESS: {{ userId: \"{uid}\" }} ")
         return JSONResponse(content={"message": "System stopped successfully"}, status_code=200)
@@ -93,10 +93,10 @@ async def control_service(request: Request, control_service_request: ControlServ
         await IOTService()._control_iot_system(
             device_id=uid,
             target=service_type,
-            command=value
+            value=value
         )
-        CustomLogger()._get_logger().info(f"Control service SUCCESS: {{ type: \"{service_type}\", value: \"{value}\", userId: \"{uid}\" }}")
-            
+        CustomLogger()._get_logger().info(f"Control service SUCCESS: {{ target: \"{service_type}\", value: \"{value}\", userId: \"{uid}\" }}")
+        
         return JSONResponse(
             content={"message": "Service control request processed successfully"},
             status_code=200

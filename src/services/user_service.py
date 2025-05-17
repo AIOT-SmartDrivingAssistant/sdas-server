@@ -3,7 +3,7 @@ from bson import ObjectId
 from services.database import Database
 
 from models.request import UserInfoRequest
-from models.mongo_doc import UserDocument
+from models.mongo_doc import EnvironmentSensorDocument, ServicesStatusDocument, UserDocument
 from gridfs import GridOut
 
 class UserService:
@@ -21,12 +21,12 @@ class UserService:
             Create 2 dict for initial user's data and user config data for register operation.
         '''
         init_user_data = {}
-        for field in UserDocument.ALL_BASIC_FIELDS:
+        for field in UserDocument.ALL_BASIC_FIELDS.value:
             init_user_data[field] = ""
 
-        init_user_data[UserDocument.FIELD_USERNAME] = username
-        init_user_data[UserDocument.FIELD_PASSWORD] = hashed_password
-        init_user_data[UserDocument.FIELD_AVATAR] = ""
+        init_user_data[UserDocument.FIELD_USERNAME.value] = username
+        init_user_data[UserDocument.FIELD_PASSWORD.value] = hashed_password
+        init_user_data[UserDocument.FIELD_AVATAR.value] = ""
 
         return init_user_data
     
@@ -52,7 +52,7 @@ class UserService:
             raise Exception("User not found")
 
         data = {}
-        for key in UserDocument.ALL_BASIC_FIELDS:
+        for key in UserDocument.ALL_BASIC_FIELDS.value:
             if key in user:
                 data[key] = user[key]
 
@@ -91,9 +91,18 @@ class UserService:
         session = Database()._instance.client.start_session()
         try:
             with session.start_transaction():
-                Database()._instance.get_user_collection().delete_one({'_id': self._get_object_id(uid)}, session=session)
-                Database()._instance.get_user_config_collection().delete_one({'uid': uid}, session=session)
-                # Database()._instance.get_env_sensor_collection().delete_many({'uid': uid})
+                Database()._instance.get_user_collection().delete_one(
+                    { '_id': self._get_object_id(uid) },
+                    session=session
+                )
+                Database()._instance.get_services_status_collection().delete_one(
+                    { ServicesStatusDocument.FIELD_UID.value: uid },
+                    session=session
+                )
+                Database()._instance.get_env_sensor_collection().delete_many(
+                    { EnvironmentSensorDocument.FIELD_UID.value: uid },
+                    session=session
+                )
         except Exception:
             session.abort_transaction()
             raise Exception("Delete user account failed")
@@ -104,14 +113,16 @@ class UserService:
         '''
             Get user avatar from the database by user id string.
         '''
-        user = Database()._instance.get_user_collection().find_one({'_id': self._get_object_id(uid)})
+        user = Database()._instance.get_user_collection().find_one(
+            { '_id': self._get_object_id(uid) }
+        )
         if not user:
             raise Exception("User not find")
         
-        if not user[UserDocument.FIELD_AVATAR] or user[UserDocument.FIELD_AVATAR] == "":
+        if not user[UserDocument.FIELD_AVATAR.value] or user[UserDocument.FIELD_AVATAR.value] == "":
             raise Exception("No avatar found")
         
-        file = Database()._instance.fs.get(ObjectId(user[UserDocument.FIELD_AVATAR]))
+        file = Database()._instance.fs.get(ObjectId(user[UserDocument.FIELD_AVATAR.value]))
 
         if not file:
             raise Exception("Can not get file")
@@ -122,13 +133,15 @@ class UserService:
         '''
             Update user avatar in the database by user id string and avatar file.
         '''
-        user = Database()._instance.get_user_collection().find_one({'_id': self._get_object_id(uid)})
+        user = Database()._instance.get_user_collection().find_one(
+            { '_id': self._get_object_id(uid) }
+        )
 
         if not user:
             raise Exception("User not find")
         
-        if user[UserDocument.FIELD_AVATAR] and user[UserDocument.FIELD_AVATAR] != "":
-            Database()._instance.fs.delete(ObjectId(user[UserDocument.FIELD_AVATAR]))
+        if user[UserDocument.FIELD_AVATAR.value] and user[UserDocument.FIELD_AVATAR.value] != "":
+            Database()._instance.fs.delete(ObjectId(user[UserDocument.FIELD_AVATAR.value]))
 
         contents = await file.read()
         file_id = Database()._instance.fs.put(
@@ -137,7 +150,12 @@ class UserService:
             content_type=file.content_type
         )
 
-        Database()._instance.get_user_collection().update_one({'_id': self._get_object_id(uid)}, {'$set': {'avatar': file_id}})
+        Database()._instance.get_user_collection().update_one(
+            { '_id': self._get_object_id(uid) },
+            { ' $set': 
+                { 'avatar': file_id }
+            }
+        )
 
         return {
             "file_id": str(file_id),
@@ -151,14 +169,21 @@ class UserService:
         '''
             Delete user avatar from the database by user id string.
         '''
-        user = Database()._instance.get_user_collection().find_one({'_id': self._get_object_id(uid)})
+        user = Database()._instance.get_user_collection().find_one(
+            { '_id': self._get_object_id(uid) }
+        )
 
         if not user:
             raise Exception("User not find")
         
-        if not user[UserDocument.FIELD_AVATAR] or user[UserDocument.FIELD_AVATAR] == "":
+        if not user[UserDocument.FIELD_AVATAR.value] or user[UserDocument.FIELD_AVATAR.value] == "":
             raise Exception("No avatar found")
         
-        Database()._instance.fs.delete(ObjectId(user[UserDocument.FIELD_AVATAR]))
+        Database()._instance.fs.delete(ObjectId(user[UserDocument.FIELD_AVATAR.value]))
 
-        Database()._instance.get_user_collection().update_one({'_id': self._get_object_id(uid)}, {'$set': {'avatar': ""}})
+        Database()._instance.get_user_collection().update_one(
+            { '_id': self._get_object_id(uid) },
+            { '$set': 
+                { 'avatar': "" }
+            }
+        )
