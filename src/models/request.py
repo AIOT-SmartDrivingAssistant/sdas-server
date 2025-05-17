@@ -30,8 +30,8 @@ class ServicesStatusRequest(BaseModel):
     humid_service: Optional[ServiceMode] = None
 
 class ControlServiceRequest(BaseModel):
-    service_type: Literal["air_cond_service", "drowsiness_service", "headlight_service", "distance_service", "temp_threshold", "humid_threshold", "distance_threshold", "lux_threshold", "drowsiness_threshold"]
-    value: str = Field(..., pattern=r"^(on|off|[1-9][0-9]*\.?[0-9]*)$")
+    service_type: Literal["air_cond_service", "drowsiness_service", "headlight_service", "distance_service", "temp_threshold", "humid_threshold", "distance_threshold", "lux_threshold", "drowsiness_threshold", "system"]
+    value: str = Field(..., pattern=r"^(on|off|0|[1-9][0-9]*\.?[0-9]*)$")
 
 class IOTDataResponse(BaseModel):
     device_id: str
@@ -41,6 +41,6 @@ class IOTDataResponse(BaseModel):
 
 class IOTNotification(BaseModel):
     device_id: str
-    service_type: Literal["air_cond_service", "drowsiness_service", "headlight_service", "distance_service", "system", "alarm_service"]
+    service_type: Literal["air_cond_service", "drowsiness_service", "headlight_service", "distance_service", "temp_threshold", "humid_threshold", "distance_threshold", "lux_threshold", "drowsiness_threshold", "system"]
     description: str
     timestamp: str

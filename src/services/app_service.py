@@ -78,7 +78,7 @@ class AppService:
             elif field == ServicesStatusDocument.FIELD_LUX_THRESHOLD.value:
                 init_services_status_data[field] = 20
             else:
-                init_services_status_data[field] = 0
+                init_services_status_data[field] = 5
 
         return init_services_status_data
 
@@ -127,6 +127,18 @@ class AppService:
         return data
     
     def _toggle_all_service_status(self, uid: str, is_turning_on: bool, session):
+        data = {
+            ServicesStatusDocument.FIELD_SYSTEM_STATUS.value: "on" if is_turning_on else "off",
+            ServicesStatusDocument.FIELD_AIR_COND_SERVICE.value: "on" if is_turning_on else "off",
+            ServicesStatusDocument.FIELD_DISTANCE_SERVICE.value: "on" if is_turning_on else "off",
+            ServicesStatusDocument.FIELD_DROWSINESS_SERVICE.value: "on" if is_turning_on else "off",
+            ServicesStatusDocument.FIELD_HEADLIGHT_SERVICE.value: "on" if is_turning_on else "off",
+        }
+        if (not is_turning_on):
+            data[ServicesStatusDocument.FIELD_AIR_COND_TEMP.value] = 0
+            data[ServicesStatusDocument.FIELD_HEADLIGHT_BRIGHTNESS.value] = 0
+            
+
         Database()._instance.get_services_status_collection().update_one(
             { 'uid': uid },
             {
@@ -135,7 +147,7 @@ class AppService:
                     ServicesStatusDocument.FIELD_AIR_COND_SERVICE.value: "on" if is_turning_on else "off",
                     ServicesStatusDocument.FIELD_DISTANCE_SERVICE.value: "on" if is_turning_on else "off",
                     ServicesStatusDocument.FIELD_DROWSINESS_SERVICE.value: "on" if is_turning_on else "off",
-                    ServicesStatusDocument.FIELD_HEADLIGHT_SERVICE.value: "on" if is_turning_on else "off"
+                    ServicesStatusDocument.FIELD_HEADLIGHT_SERVICE.value: "on" if is_turning_on else "off",
                 }
             },
             session=session

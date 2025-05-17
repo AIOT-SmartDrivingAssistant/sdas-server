@@ -88,7 +88,7 @@ class IOTService:
                         CustomLogger()._get_logger().error(f"Websocket error: {{ deviceId: \"{device_id}\" }} invalid response {e}")
                         await websocket.send_json({"error": "Invalid response"})
 
-                elif IotNotification.FIELD_DESCRIPTION in data:
+                elif IotNotification.FIELD_DESCRIPTION.value in data:
                     # Data is a notification
                     try:
                         iot_notification = IOTNotification(**data)
@@ -98,7 +98,7 @@ class IOTService:
                             await websocket.send_json({"error": "Device ID mismatch"})
                             continue
 
-                        CustomLogger()._get_logger().info(f"Websocket notification: {{ deviceId: \"{device_id}\", service_type \"{iot_notification.service_type}\", notification \"{iot_notification.notification}\" }}")
+                        CustomLogger()._get_logger().info(f"Websocket notification: {{ deviceId: \"{device_id}\", service_type \"{iot_notification.service_type}\", notification \"{iot_notification.description}\" }}")
 
                         await AppService()._add_notification(
                             client_id=device_id,
